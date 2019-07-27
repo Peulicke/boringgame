@@ -4,6 +4,6 @@
         ws.send("test");
     };
     ws.onmessage = function(event) {
-        console.log(JSON.parse(event.data));
+        console.log(event.data);
     };
 </script>
