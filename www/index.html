@@ -1,18 +1,46 @@
-<script>
-    var ws = new WebSocket('ws://' + location.host);
-    ws.onopen = function() {
-        ws.send(JSON.stringify({
-            name: prompt("name")
-        }));
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            html, body, div, canvas {
+                margin: 0;
+                padding: 0;
+            }
+            canvas {
+                background-color: gray;
+            }
+        </style>
+    </head>
+    <body>
+        <script>
+            var canvas = document.createElement("canvas");
+            canvas.style.backgroundColor = "#f7f4f1";
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            document.body.appendChild(canvas);
+            var ctx = canvas.getContext("2d");
 
-        document.body.onmousemove = function(event) {
-            ws.send(JSON.stringify({
-                x: event.clientX,
-                y: event.clientY
-            }));
-        };
-    };
-    ws.onmessage = function(event) {
-        console.log(JSON.parse(event.data));
-    };
-</script>
+            var ws = new WebSocket('ws://' + location.host);
+            ws.onopen = function() {
+                ws.send(JSON.stringify({
+                    name: prompt("name")
+                }));
+
+                document.body.onmousemove = function(event) {
+                    ws.send(JSON.stringify({
+                        x: event.clientX,
+                        y: event.clientY
+                    }));
+                };
+            };
+            ws.onmessage = function(event) {
+                var data = JSON.parse(event.data);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for(var i = 0; i < data.length; ++i){
+                    ctx.fillRect(data[i].x, data[i].y, 10, 10);
+                }
+            };
+        </script>
+    </body>
+</html>
