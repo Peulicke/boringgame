@@ -42,17 +42,10 @@
     </table>
     <script>
       (function() {
-        const rss = document.getElementById('rss');
-        const heapTotal = document.getElementById('heapTotal');
-        const heapUsed = document.getElementById('heapUsed');
-        const external = document.getElementById('external');
-        const ws = new WebSocket(`ws://${location.host}`);
+        const ws = new WebSocket('ws://${location.host}');
         ws.onmessage = function(event) {
-          const data = JSON.parse(event.data);
-          rss.textContent = data.rss;
-          heapTotal.textContent = data.heapTotal;
-          heapUsed.textContent = data.heapUsed;
-          external.textContent = data.external;
+            console.log(event);
+            document.body.innerHTML = JSON.stringify(event.data);
         };
       })();
     </script>
