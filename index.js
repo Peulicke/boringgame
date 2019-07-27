@@ -10,9 +10,11 @@ var wss = new WebSocket.Server({server});
 
 wss.on('connection', function(ws) {
     ws.on('message', function(msg) {
+        var ids = [];
         wss.clients.forEach(function(client) {
-            ws.send(client.id);
+            ids.push(client.id);
         });
+        ws.send(JSON.stringify(ids));
     });
 });
 
