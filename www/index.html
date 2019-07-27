@@ -44,8 +44,7 @@
       (function() {
         const ws = new WebSocket('ws://' + location.host);
         ws.onmessage = function(event) {
-            console.log(event);
-            document.body.innerHTML = JSON.stringify(event.data);
+            console.log(JSON.parse(event.data));
         };
       })();
     </script>
