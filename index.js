@@ -1,31 +1,20 @@
-const express = require('express');
-const path = require('path');
-const { createServer } = require('http');
-
-const WebSocket = require('ws');
+var express = require('express');
+var http = require('http');
+var ws = require('ws');
 
 const app = express();
-app.use(express.static(path.join(__dirname, '/www')));
+app.use(express.static(__dirname + '/www'));
 
-const server = createServer(app);
-const wss = new WebSocket.Server({ server });
+const server = http.createServer(app);
+const wss = new ws.Server({server});
 
 wss.on('connection', function(ws) {
-  const id = setInterval(function() {
-    ws.send(JSON.stringify(process.memoryUsage()), function() {
-      //
-      // Ignore errors.
-      //
+    const id = setInterval(function() {
+        ws.send(JSON.stringify(process.memoryUsage()));
+    }, 100);
+    ws.on('close', function() {
+        clearInterval(id);
     });
-  }, 100);
-  console.log('started client interval');
-
-  ws.on('close', function() {
-    console.log('stopping client interval');
-    clearInterval(id);
-  });
 });
 
-server.listen(process.env.PORT || 5000, function() {
-  console.log('Listening');
-});
+server.listen(process.env.PORT || 5000);
