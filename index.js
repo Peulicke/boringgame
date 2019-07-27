@@ -9,8 +9,8 @@ var server = http.createServer(app);
 var wss = new WebSocket.Server({server});
 
 wss.on('connection', function(ws) {
-    ws.on('message', function(event) {
-        ws.send(JSON.stringify(event));
+    ws.on('message', function(msg) {
+        ws.send(msg);
     });
 });
 
