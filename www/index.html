@@ -1,15 +1,15 @@
 <script>
     var ws = new WebSocket('ws://' + location.host);
     ws.onopen = function() {
-        ws.send({
+        ws.send(JSON.stringify({
             name: prompt("name")
-        });
+        }));
 
         document.body.onmousemove = function(event) {
-            ws.send({
+            ws.send(JSON.stringify({
                 x: event.clientX,
                 y: event.clientY
-            });
+            }));
         };
     };
     ws.onmessage = function(event) {
