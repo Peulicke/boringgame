@@ -10,7 +10,7 @@ var wss = new WebSocket.Server({server});
 
 wss.on('connection', function(ws) {
     ws.on('message', function(event) {
-        ws.send(event.data);
+        ws.send(JSON.stringify(event));
     });
 });
 
