@@ -1,5 +1,3 @@
-'use strict';
-
 const express = require('express');
 const path = require('path');
 const { createServer } = require('http');
@@ -7,7 +5,7 @@ const { createServer } = require('http');
 const WebSocket = require('ws');
 
 const app = express();
-app.use(express.static(path.join(__dirname, '/public')));
+app.use(express.static(path.join(__dirname, '/www')));
 
 const server = createServer(app);
 const wss = new WebSocket.Server({ server });
