@@ -1,25 +1,33 @@
-var express = require('express');
-var cors = require('cors');
-var bodyParser = require('body-parser');
+'use strict';
+
+const express = require('express');
+const path = require('path');
+const { createServer } = require('http');
+
+const WebSocket = require('ws');
 
 const app = express();
+app.use(express.static(path.join(__dirname, '/public')));
 
-app.use(cors());
-app.use(express.static(__dirname + '/www'));
-app.use(bodyParser.json({limit: '10mb', extended: true}));
-app.use(bodyParser.urlencoded({limit: '10mb', extended: true, parameterLimit: 10000}));
+const server = createServer(app);
+const wss = new WebSocket.Server({ server });
 
-app.listen(process.env.PORT || 1337);
+wss.on('connection', function(ws) {
+  const id = setInterval(function() {
+    ws.send(JSON.stringify(process.memoryUsage()), function() {
+      //
+      // Ignore errors.
+      //
+    });
+  }, 100);
+  console.log('started client interval');
 
+  ws.on('close', function() {
+    console.log('stopping client interval');
+    clearInterval(id);
+  });
+});
 
-
-const WebSocket = require('ws')
-
-const wss = new WebSocket.Server({ port: 8080 })
-
-wss.on('connection', ws => {
-    ws.on('message', message => {
-        console.log('Received message => ${message}')
-    })
-    ws.send('Hello! Message From Server!!')
-})
+server.listen(8080, function() {
+  console.log('Listening on http://localhost:8080');
+});
