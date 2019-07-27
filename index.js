@@ -10,12 +10,15 @@ var wss = new WebSocket.Server({server});
 
 wss.on('connection', function(ws) {
     ws.on('message', function(msg) {
-        ws.name = msg;
-        var names = [];
+        var data = JSON.parse(msg);
+        for(var i = 0; i < Object.keys(data).length; ++i){
+            ws[Object.keys(data)[i]] = data[Object.keys(data)[i]];
+        }
+        var res = [];
         wss.clients.forEach(function(client) {
-            names.push(client.name);
+            res.push(client);
         });
-        ws.send(JSON.stringify(names));
+        ws.send(JSON.stringify(res));
     });
 });
 
