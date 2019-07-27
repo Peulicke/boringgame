@@ -14,12 +14,22 @@
     </head>
     <body>
         <script>
+            var level = new Array(10);
+            for(var i = 0; i < level.length; ++i){
+                level[i] = new Array(10);
+                for(var j = 0; j < level[i].length; ++j){
+                    level[i][j] = null;
+                }
+            }
+
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             document.body.appendChild(canvas);
             var ctx = canvas.getContext("2d");
+
+            var scale = canvas.height/level[0].length;
 
             var ws = new WebSocket('ws://' + location.host);
             ws.onopen = function() {
@@ -29,8 +39,8 @@
 
                 document.body.onmousemove = function(event) {
                     ws.send(JSON.stringify({
-                        x: event.clientX,
-                        y: event.clientY
+                        x: Math.floor(event.clientX/scale),
+                        y: Math.floor(event.clientY/scale)
                     }));
                 };
             };
@@ -38,7 +48,7 @@
                 var data = JSON.parse(event.data);
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 for(var i = 0; i < data.length; ++i){
-                    ctx.fillRect(data[i].x, data[i].y, 10, 10);
+                    ctx.fillRect(scale*data[i].x, scale*data[i].y, scale, scale);
                 }
             };
         </script>
