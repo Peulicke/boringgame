@@ -13,7 +13,7 @@ var connections = [];
 wss.on('connection', function(ws) {
     connections.push(ws);
     ws.on('message', function(msg) {
-        ws.send(JSON.stringify(wss));
+        ws.send(JSON.stringify(wss.clients));
     });
 });
 
