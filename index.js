@@ -15,12 +15,17 @@ wss.on('connection', function(ws) {
         for(var i = 0; i < Object.keys(data).length; ++i){
             ws.data[Object.keys(data)[i]] = data[Object.keys(data)[i]];
         }
+    });
+    setInterval(function(){
         var res = [];
         wss.clients.forEach(function(client) {
             res.push(client.data);
         });
-        ws.send(JSON.stringify(res));
-    });
+        res = JSON.stringify(res);
+        wss.clients.forEach(function(client) {
+            client.send(res);
+        });
+    }, 100);
 });
 
 server.listen(process.env.PORT || 5000);
