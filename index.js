@@ -12,7 +12,7 @@ wss.on('connection', function(ws) {
     ws.on('message', function(msg) {
         var ids = [];
         wss.clients.forEach(function(client) {
-            ids.push(client.id);
+            ids.push(client);
         });
         ws.send(JSON.stringify(ids));
     });
