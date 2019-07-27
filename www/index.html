@@ -1,8 +1,8 @@
 <script>
     var ws = new WebSocket('ws://' + location.host);
-    ws.on('open', function open() {
+    ws.onopen = function() {
         ws.send("test");
-    });
+    };
     ws.onmessage = function(event) {
         console.log(event.data);
     };
