@@ -9,14 +9,15 @@ var server = http.createServer(app);
 var wss = new WebSocket.Server({server});
 
 wss.on('connection', function(ws) {
+    ws.data = {};
     ws.on('message', function(msg) {
         var data = JSON.parse(msg);
         for(var i = 0; i < Object.keys(data).length; ++i){
-            ws[Object.keys(data)[i]] = data[Object.keys(data)[i]];
+            ws.data[Object.keys(data)[i]] = data[Object.keys(data)[i]];
         }
         var res = [];
         wss.clients.forEach(function(client) {
-            res.push(client);
+            res.push(client.data);
         });
         ws.send(JSON.stringify(res));
     });
