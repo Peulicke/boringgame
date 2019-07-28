@@ -14,13 +14,9 @@
     </head>
     <body>
         <script>
-            var level = new Array(10);
-            for(var i = 0; i < level.length; ++i){
-                level[i] = new Array(10);
-                for(var j = 0; j < level[i].length; ++j){
-                    level[i][j] = null;
-                }
-            }
+            var radius = 50;
+            var player = null;
+            var levelSize = null;
 
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
@@ -29,27 +25,53 @@
             document.body.appendChild(canvas);
             var ctx = canvas.getContext("2d");
 
-            var scale = canvas.height/level[0].length;
-
             var ws = new WebSocket('ws://' + location.host);
             ws.onopen = function() {
-                ws.send(JSON.stringify({
-                    name: prompt("name")
-                }));
-
                 document.body.onmousemove = function(event) {
+                    if(player == null) return;
+                    var dx = event.clientX-canvas.width/2;
+                    var dy = event.clientY-canvas.height/2;
+                    var speedScale = 0.01;
                     ws.send(JSON.stringify({
-                        x: Math.floor(event.clientX/scale),
-                        y: Math.floor(event.clientY/scale)
+                        x: dx*speedScale,
+                        y: dy*speedScale
                     }));
                 };
             };
             ws.onmessage = function(event) {
                 var data = JSON.parse(event.data);
+                levelSize = data.levelSize;
+                player = data.player;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                for(var i = 0; i < data.length; ++i){
-                    ctx.fillRect(scale*data[i].x, scale*data[i].y, scale, scale);
+                ctx.save()
+                ctx.translate(canvas.width/2-player.pos.x, canvas.height/2-player.pos.y);
+                var d = 50;
+                var n = levelSize/d;
+                ctx.lineWidth = 0.5;
+                for(var i = 0; i <= n; ++i){
+                    ctx.beginPath();
+                    ctx.moveTo(0, d*i);
+                    ctx.lineTo(d*n, d*i);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(d*i, 0);
+                    ctx.lineTo(d*i, d*n);
+                    ctx.stroke();
                 }
+                ctx.lineWidth = 1;
+                for(var i = 0; i < Object.keys(data.players).length; ++i){
+                    var p = data.players[Object.keys(data.players)[i]];
+                    if(p.id == data.player.id) ctx.fillStyle = "green";
+                    else ctx.fillStyle = "black";
+                    ctx.beginPath();
+                    ctx.arc(p.pos.x, p.pos.y, radius, 0, 2*Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(p.pos.x, p.pos.y);
+                    ctx.lineTo(p.pos.x+p.vel.x*radius*2, p.pos.y+p.vel.y*radius*2);
+                    ctx.stroke();
+                }
+                ctx.restore();
             };
         </script>
     </body>

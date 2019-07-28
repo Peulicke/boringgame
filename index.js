@@ -16,27 +16,84 @@ wss.getUniqueID = function () {
 };
 
 var clients = {};
+var levelSize = 1000;
+var radius = 50;
 
 setInterval(function(){
-    var res = [];
     wss.clients.forEach(function(client) {
-        res.push(client.data);
+        client.data.pos.x += client.data.vel.x;
+        client.data.pos.y += client.data.vel.y;
+        if(client.data.pos.x < client.data.r) client.close();
+        if(client.data.pos.x > levelSize-client.data.r) client.close();
+        if(client.data.pos.y < client.data.r) client.close();
+        if(client.data.pos.y > levelSize-client.data.r) client.close();
+        wss.clients.forEach(function(c) {
+            if(client == c) return;
+            if(client.data.connections[c.id]) return;
+            var dx = c.data.pos.x-client.data.pos.x;
+            var dy = c.data.pos.y-client.data.pos.y;
+            var len = Math.sqrt(dx*dx+dy*dy);
+            var r = client.data.r+c.data.r;
+            if(len > r) return;
+            client.data.connections[c.id] = true;
+            c.data.connections[client.id] = true;
+        });
     });
-    res = JSON.stringify(res);
     wss.clients.forEach(function(client) {
-        client.send(res);
+        for(var i = 0; i < Object.keys(client.data.connections).length; ++i){
+            var c = clients[Object.keys(client.data.connections)[i]];
+            var dx = c.data.pos.x-client.data.pos.x;
+            var dy = c.data.pos.y-client.data.pos.y;
+            var len = Math.sqrt(dx*dx+dy*dy);
+            var r = client.data.r+c.data.r;
+            dx *= (r-len)/len;
+            dy *= (r-len)/len;
+            client.data.pos.x -= dx/2;
+            client.data.pos.y -= dy/2;
+            c.data.pos.x += dx/2;
+            c.data.pos.y += dy/2;
+        }
+    });
+
+    var res = {};
+    wss.clients.forEach(function(client) {
+        res[client.id] = client.data;
+    });
+    wss.clients.forEach(function(client) {
+        client.send(JSON.stringify({
+            player: client.data,
+            players: res,
+            levelSize: levelSize
+        }));
     });
 }, 0);
 
 wss.on('connection', function(ws) {
     ws.id = wss.getUniqueID();
     clients[ws.id] = ws;
-    ws.data = {};
+    ws.data = {
+        id: ws.id,
+        pos: {
+            x: Math.random()*(levelSize-2*radius)+radius,
+            y: Math.random()*(levelSize-2*radius)+radius
+        },
+        vel: {
+            x: 0,
+            y: 0
+        },
+        connections: {},
+        r: radius
+    };
     ws.on('message', function(msg) {
-        var data = JSON.parse(msg);
-        for(var i = 0; i < Object.keys(data).length; ++i){
-            ws.data[Object.keys(data)[i]] = data[Object.keys(data)[i]];
+        var maxSpeed = 1;
+        var d = JSON.parse(msg);
+        var len = Math.sqrt(d.x*d.x+d.y*d.y);
+        len /= maxSpeed;
+        if(len > 1){
+            d.x /= len;
+            d.y /= len;
         }
+        ws.data.vel = d;
     });
 });
 
