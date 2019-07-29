@@ -5,8 +5,8 @@ var WebSocket = require('ws');
 var app = express();
 app.use(express.static(__dirname + '/www'));
 
-var server = http.createServer(app);
-var wss = new WebSocket.Server({server});
+var server = app.listen(process.env.PORT || 5000);
+var wss = new WebSocket.Server({server: server});
 
 wss.getUniqueID = function () {
     function s4() {
@@ -96,5 +96,3 @@ wss.on('connection', function(ws) {
         ws.data.vel = d;
     });
 });
-
-server.listen(process.env.PORT || 5000);
