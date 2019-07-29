@@ -23,10 +23,18 @@ setInterval(function(){
     wss.clients.forEach(function(client) {
         client.data.pos.x += client.data.vel.x;
         client.data.pos.y += client.data.vel.y;
-        if(client.data.pos.x < client.data.r) client.close();
-        if(client.data.pos.x > levelSize-client.data.r) client.close();
-        if(client.data.pos.y < client.data.r) client.close();
-        if(client.data.pos.y > levelSize-client.data.r) client.close();
+        if(client.data.pos.x < client.data.r || client.data.pos.x > levelSize-client.data.r || client.data.pos.y < client.data.r || client.data.pos.y > levelSize-client.data.r){
+            delete clients[client.id];
+            for(var i = 0; i < Object.keys(client.data.connections).length; ++i){
+                var c = clients[Object.keys(client.data.connections)[i]];
+                for(var j = 0; j < Object.keys(c.data.connections).length; ++j){
+                    if(Object.keys(c.data.connections)[j] == client.id) delete c.data.connections[Object.keys(c.data.connections)[j]];
+                }
+            }
+            client.close();
+        }
+    });
+    wss.clients.forEach(function(client) {
         wss.clients.forEach(function(c) {
             if(client == c) return;
             if(client.data.connections[c.id]) return;
