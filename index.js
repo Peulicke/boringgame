@@ -7,7 +7,7 @@ app.use(express.static(__dirname + '/www'));
 
 var server = http.createServer(app);
 var wss = new WebSocket.Server({server});
-/*
+
 wss.getUniqueID = function () {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -96,7 +96,7 @@ wss.on('connection', function(ws) {
         ws.data.vel = d;
     });
 });
-*/
+
 var port = process.env.PORT || 5000;
 
 server.listen(port, function(){
