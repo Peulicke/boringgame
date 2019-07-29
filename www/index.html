@@ -6,6 +6,7 @@
             html, body, div, canvas {
                 margin: 0;
                 padding: 0;
+                overflow: hidden;
             }
             canvas {
                 background-color: gray;
@@ -20,8 +21,11 @@
 
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            document.body.onresize = function(){
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            document.body.onresize();
             document.body.appendChild(canvas);
             var ctx = canvas.getContext("2d");
 
