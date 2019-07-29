@@ -5,8 +5,8 @@ var WebSocket = require('ws');
 var app = express();
 app.use(express.static(__dirname + '/www'));
 
-//var server = http.createServer(app);
-var wss = new WebSocket.Server({app});
+var server = http.createServer(app);
+var wss = new WebSocket.Server({server});
 /*
 wss.getUniqueID = function () {
     function s4() {
