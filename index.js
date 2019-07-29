@@ -96,10 +96,9 @@ wss.on('connection', function(ws) {
         ws.data.vel = d;
     });
 });
-
+*/
 var port = process.env.PORT || 5000;
 
-server.listen(port, "0.0.0.0", function(){
+server.listen(port, function(){
     console.log("Server listening on port " + port);
 });
-*/
