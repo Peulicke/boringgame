@@ -16,7 +16,7 @@ wss.getUniqueID = function () {
 };
 
 var clients = {};
-var levelSize = 1000;
+var levelSize = 3000;
 var radius = 50;
 
 setInterval(function(){
