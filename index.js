@@ -5,9 +5,9 @@ var WebSocket = require('ws');
 var app = express();
 app.use(express.static(__dirname + '/www'));
 
-var server = http.createServer(app);
-var wss = new WebSocket.Server({server});
-
+//var server = http.createServer(app);
+var wss = new WebSocket.Server({app});
+/*
 wss.getUniqueID = function () {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -102,3 +102,4 @@ var port = process.env.PORT || 5000;
 server.listen(port, "0.0.0.0", function(){
     console.log("Server listening on port " + port);
 });
+*/
