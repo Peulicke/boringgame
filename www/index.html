@@ -20,6 +20,8 @@
             var fighters = [];
             var level = null;
             var rng = null;
+            var areas = [];
+            var levelAreas = null;
 
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
@@ -61,6 +63,8 @@
                 if(data.fighters){
                     fighters = data.fighters;
                     level = data.level;
+                    [areas, levelAreas] = shared.computeAreas(level);
+                    
                     off.width = level.length;
                     off.height = level[0].length;
                     offctx = off.getContext('2d');
@@ -82,7 +86,6 @@
                     return;
                 }
                 player = data.player;
-                var dist = {};
                 for(var i = 0; i < Object.keys(data.players).length; ++i){
                     var id = Object.keys(data.players)[i];
                     var p = data.players[id];
@@ -92,10 +95,11 @@
                     if(p.pos.x > level.length) p.pos.x = level.length;
                     if(p.pos.y < 0) p.pos.y = 0;
                     if(p.pos.y > level[0].length) p.pos.y = level[0].length;
-                    dist[id] = shared.distance(level, {
+                    var pos = {
                         x: Math.min(Math.floor(p.pos.x), level.length-1),
                         y: Math.min(Math.floor(p.pos.y), level[0].length-1)
-                    });
+                    };
+                    areaTargets = shared.search(level, areas, levelAreas, pos);
                 }
                 for(var i = 0; i < fighters.length; ++i){
                     var possibilities = [];
@@ -107,7 +111,7 @@
                                 y: fighters[i].y+y
                             };
                             if(possibility.x < 0 || possibility.x >= level.length || possibility.y < 0 || possibility.y >= level[0].length) continue;
-                            possibility.d = dist[id][possibility.x][possibility.y]+Math.abs(x)+Math.abs(y);
+                            possibility.d = shared.dist(level, areas, levelAreas, areaTargets, possibility);
                             if(x == 0 && y == 0) continue;
                             if(level[possibility.x][possibility.y] != false) continue;
                             possibilities.push(possibility);
@@ -132,7 +136,7 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.save()
                 ctx.translate(canvas.width/2, canvas.height/2);
-                var scale = 2;
+                var scale = 5;
                 ctx.scale(scale, scale);
                 ctx.translate(-player.pos.x, -player.pos.y);
                 ctx.lineWidth = 0.1;
@@ -161,6 +165,18 @@
                     ctx.arc(p.pos.x, p.pos.y, radius, 0, 2*Math.PI);
                     ctx.fill();
                 }
+                /*ctx.lineWidth = 0.3;
+                ctx.strokeStyle = "blue";
+                var p = {
+                    x: Math.min(Math.floor(p.pos.x), level.length-1),
+                    y: Math.min(Math.floor(p.pos.y), level[0].length-1)
+                }
+                //var i = levelAreas[p.x][p.y][0];
+                for(var i = 0; i < areas.length; ++i){
+                    ctx.strokeRect(areas[i].x1, areas[i].y1, areas[i].x2-areas[i].x1+1, areas[i].y2-areas[i].y1+1);
+                    if(areaTargets[i].length == 0) continue;
+                    ctx.fillRect(areaTargets[i][0].x, areaTargets[i][0].y, 2, 2);
+                }*/
                 ctx.restore();
             };
         </script>

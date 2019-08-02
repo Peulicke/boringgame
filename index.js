@@ -16,15 +16,15 @@ wss.getUniqueID = function () {
     return s4()+s4()+s4();
 };
 
-var levelSize = 100;
-var startNumber = 1000;
+var levelSize = 1000;
+var startNumber = 3000;
 var rng = new shared.Random(123);
 
 var clients = {};
 var fighters = [];
 var level = new Array(levelSize);
 var metaballs = [];
-for(var i = 0; i < 10; ++i){
+for(var i = 0; i < 400; ++i){
     metaballs.push({
         x: Math.random()*levelSize,
         y: Math.random()*levelSize
@@ -104,7 +104,7 @@ wss.on('connection', function(ws) {
         seed: rng.seed
     }));
     ws.on('message', function(msg) {
-        var maxSpeed = 1;
+        var maxSpeed = 10;
         var d = JSON.parse(msg);
         var len = Math.sqrt(d.x*d.x+d.y*d.y);
         len /= maxSpeed;
