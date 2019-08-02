@@ -32,8 +32,6 @@
             document.body.appendChild(canvas);
             var ctx = canvas.getContext('2d');
 
-            var off = document.createElement('canvas');
-            var offctx = null;
             var imagedata = null;
             var pixels = null;
 
@@ -68,10 +66,8 @@
                     if(level[x][y] !== false) return false;
                     level[x][y] = fighter;
                     level[fighter.x][fighter.y] = false;
-                    pixels[fighter.x+fighter.y*level.length] = 0;
                     fighter.x = x;
                     fighter.y = y;
-                    pixels[fighter.x+fighter.y*level.length] = 255 << 24 | (0.5 + 0.8 * 255);
                     return true;
                 }
                 for(var i = 0; i < fighters.length; ++i){
@@ -153,10 +149,44 @@
                 }
                 ctx.lineWidth = 0.1;
                 ctx.fillStyle = "black";
+                var viewRadius = 100;
+                var off = document.createElement('canvas');
+                off.width = viewRadius*2;
+                off.height = viewRadius*2;
+                var offctx = off.getContext('2d');
+                imagedata = offctx.createImageData(viewRadius*2, viewRadius*2);
+                pixels = new Uint32Array(imagedata.data.buffer);
+                var pos = {
+                    x: Math.floor(player.pos.x),
+                    y: Math.floor(player.pos.y)
+                };
+                for(var i = 0; i < viewRadius*2; ++i){
+                    for(var j = 0; j < viewRadius*2; ++j){
+                        var x = pos.x-viewRadius+i;
+                        var y = pos.y-viewRadius+j;
+                        if(x < 0) continue;
+                        if(x >= level.length) continue;
+                        if(y < 0) continue;
+                        if(y >= level[0].length) continue;
+                        var r = 0;
+                        var g = 0;
+                        var b = 0;
+                        if(level[x][y] === true) pixels[i+j*viewRadius*2] = ((255 << 8 | r) << 8 | g) << 8 | b;
+                        else pixels[i+j*viewRadius*2] = 0;
+                    }
+                }
+                for(var i = 0; i < fighters.length; ++i){
+                    var x = fighters[i].x-(pos.x-viewRadius);
+                    var y = fighters[i].y-(pos.y-viewRadius);
+                    if(x < 0) continue;
+                    if(x >= viewRadius*2) continue;
+                    if(y < 0) continue;
+                    if(y >= viewRadius*2) continue;
+                    pixels[x+y*viewRadius*2] = 255 << 24 | (0.5 + 0.8 * 255);
+                }
                 offctx.clearRect(0, 0, off.width, off.height);
                 offctx.putImageData(imagedata, 0, 0);
-                ctx.drawImage(off, 0, 0, level.length, level[0].length);
-
+                ctx.drawImage(off, pos.x-viewRadius, pos.y-viewRadius, viewRadius*2, viewRadius*2);
                 var radius = 1;
                 for(var i = 0; i < Object.keys(data.players).length; ++i){
                     var p = data.players[Object.keys(data.players)[i]];
@@ -188,20 +218,6 @@
                     level = data.level;
                     [areas, levelAreas] = shared.computeAreas(level);
                     
-                    off.width = level.length;
-                    off.height = level[0].length;
-                    offctx = off.getContext('2d');
-                    imagedata = offctx.createImageData(level.length, level[0].length);
-                    pixels = new Uint32Array(imagedata.data.buffer);
-                    for(var i = 0; i < level.length; ++i){
-                        for(var j = 0; j < level[0].length; ++j){
-                            var r = 0;
-                            var g = 0;
-                            var b = 0;
-                            if(level[i][j] === true) pixels[i+j*level.length] = ((255 << 8 | r) << 8 | g) << 8 | b;
-                            else pixels[i+j*level.length] = 0;
-                        }
-                    }
                     for(var i = 0; i < fighters.length; ++i){
                         level[fighters[i].x][fighters[i].y] = fighters[i];
                     }
