@@ -19,7 +19,6 @@
             var player = null;
             var fighters = [];
             var level = null;
-            var rng = null;
             var areas = [];
             var levelAreas = null;
 
@@ -58,34 +57,65 @@
                     ws.send(JSON.stringify(vel));
                 }, 1000/60);
             };
-            ws.onmessage = function(event) {
-                var data = JSON.parse(event.data);
-                if(data.fighters){
-                    fighters = data.fighters;
-                    level = data.level;
-                    [areas, levelAreas] = shared.computeAreas(level);
-                    
-                    off.width = level.length;
-                    off.height = level[0].length;
-                    offctx = off.getContext('2d');
-                    imagedata = offctx.createImageData(level.length, level[0].length);
-                    pixels = new Uint32Array(imagedata.data.buffer);
-                    for(var i = 0; i < level.length; ++i){
-                        for(var j = 0; j < level[0].length; ++j){
-                            var r = 0;
-                            var g = 0;
-                            var b = 0;
-                            if(level[i][j] === true) pixels[i+j*level.length] = ((255 << 8 | r) << 8 | g) << 8 | b;
-                            else pixels[i+j*level.length] = 0;
+            function moveFighters(){
+                function move(fighter, dx, dy){
+                    var x = fighter.x+dx;
+                    var y = fighter.y+dy;
+                    if(x < 0) return false;
+                    if(y < 0) return false;
+                    if(x >= level.length) return false;
+                    if(y >= level[0].length) return false;
+                    if(level[x][y] !== false) return false;
+                    level[x][y] = fighter;
+                    level[fighter.x][fighter.y] = false;
+                    pixels[fighter.x+fighter.y*level.length] = 0;
+                    fighter.x = x;
+                    fighter.y = y;
+                    pixels[fighter.x+fighter.y*level.length] = 255 << 24 | (0.5 + 0.8 * 255);
+                    return true;
+                }
+                for(var i = 0; i < fighters.length; ++i){
+                    var dir = shared.dist(level, areas, levelAreas, areaTargets, fighters[i]);
+                    if(!dir) continue;
+                    var m = Math.abs(dir.x)+Math.abs(dir.y);
+                    if(m == 0) continue;
+                    if(m == 1){
+                        if(move(fighters[i], dir.x, dir.y)) continue;
+                        var rand = (Math.random() < 0.5);
+                        if(rand){
+                            if(move(fighters[i], dir.x-dir.y, dir.x+dir.y)) continue;
+                        }
+                        else{
+                            if(move(fighters[i], dir.x+dir.y, dir.y-dir.x)) continue;
+                        }
+                        rand = (Math.random() < 0.5);
+                        if(rand){
+                            if(move(fighters[i], -dir.y, dir.x)) continue;
+                        }
+                        else{
+                            if(move(fighters[i], dir.y, -dir.x)) continue;
                         }
                     }
-                    for(var i = 0; i < fighters.length; ++i){
-                        level[fighters[i].x][fighters[i].y] = fighters[i];
+                    if(m == 2){
+                        if(move(fighters[i], dir.x, dir.y)) continue;
+                        var rand = (Math.random() < 0.5);
+                        if(rand){
+                            if(move(fighters[i], dir.x, 0)) continue;
+                        }
+                        else{
+                            if(move(fighters[i], 0, dir.y)) continue;
+                        }
+                        rand = (Math.random() < 0.5);
+                        if(rand){
+                            if(move(fighters[i], -dir.y, dir.x)) continue;
+                        }
+                        else{
+                            if(move(fighters[i], dir.y, -dir.x)) continue;
+                        }
                     }
-                    rng = new shared.Random(data.seed);
-                    return;
                 }
-                player = data.player;
+            }
+            function update(data){
                 for(var i = 0; i < Object.keys(data.players).length; ++i){
                     var id = Object.keys(data.players)[i];
                     var p = data.players[id];
@@ -101,42 +131,13 @@
                     };
                     areaTargets = shared.search(level, areas, levelAreas, pos);
                 }
-                for(var i = 0; i < fighters.length; ++i){
-                    var possibilities = [];
-                    for(var x = -1; x <= 1; ++x){
-                        for(var y = -1; y <= 1; ++y){
-                            if(Math.abs(x)+Math.abs(y) == 2) continue;
-                            var possibility = {
-                                x: fighters[i].x+x,
-                                y: fighters[i].y+y
-                            };
-                            if(possibility.x < 0 || possibility.x >= level.length || possibility.y < 0 || possibility.y >= level[0].length) continue;
-                            possibility.d = shared.dist(level, areas, levelAreas, areaTargets, possibility);
-                            if(x == 0 && y == 0) continue;
-                            if(level[possibility.x][possibility.y] != false) continue;
-                            possibilities.push(possibility);
-                        }
-                    }
-                    for(var k = 0; k < possibilities.length-1; ++k) for(var j = 0; j < possibilities.length-1; ++j){
-                        if(possibilities[j].d < possibilities[j+1].d) continue;
-                        if(possibilities[j].d == possibilities[j+1].d && Math.random() < 0.5) continue;
-                        var p = possibilities[j];
-                        possibilities[j] = possibilities[j+1];
-                        possibilities[j+1] = p;
-                    }
-                    if(possibilities.length == 0) continue;
-                    level[possibilities[0].x][possibilities[0].y] = fighters[i];
-                    level[fighters[i].x][fighters[i].y] = false;
-                    pixels[fighters[i].x+fighters[i].y*level.length] = 0;
-                    fighters[i].x = possibilities[0].x;
-                    fighters[i].y = possibilities[0].y;
-                    pixels[fighters[i].x+fighters[i].y*level.length] = 255 << 24 | (0.5 + 0.8 * 255);
-                }
-                // draw
+                moveFighters();
+            }
+            function draw(data){
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.save()
                 ctx.translate(canvas.width/2, canvas.height/2);
-                var scale = 5;
+                var scale = 10;
                 ctx.scale(scale, scale);
                 ctx.translate(-player.pos.x, -player.pos.y);
                 ctx.lineWidth = 0.1;
@@ -178,6 +179,36 @@
                     ctx.fillRect(areaTargets[i][0].x, areaTargets[i][0].y, 2, 2);
                 }*/
                 ctx.restore();
+            }
+            ws.onmessage = function(event) {
+                var data = JSON.parse(event.data);
+                player = data.player;
+                if(data.fighters){
+                    fighters = data.fighters;
+                    level = data.level;
+                    [areas, levelAreas] = shared.computeAreas(level);
+                    
+                    off.width = level.length;
+                    off.height = level[0].length;
+                    offctx = off.getContext('2d');
+                    imagedata = offctx.createImageData(level.length, level[0].length);
+                    pixels = new Uint32Array(imagedata.data.buffer);
+                    for(var i = 0; i < level.length; ++i){
+                        for(var j = 0; j < level[0].length; ++j){
+                            var r = 0;
+                            var g = 0;
+                            var b = 0;
+                            if(level[i][j] === true) pixels[i+j*level.length] = ((255 << 8 | r) << 8 | g) << 8 | b;
+                            else pixels[i+j*level.length] = 0;
+                        }
+                    }
+                    for(var i = 0; i < fighters.length; ++i){
+                        level[fighters[i].x][fighters[i].y] = fighters[i];
+                    }
+                    return;
+                }
+                update(data);
+                draw(data);
             };
         </script>
     </body>

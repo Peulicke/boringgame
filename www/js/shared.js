@@ -45,8 +45,8 @@
             }
         }
         function shuffle(a) {
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
+            for (var i = a.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
                 [a[i], a[j]] = [a[j], a[i]];
             }
             return a;
@@ -129,24 +129,37 @@
         }
         return [areas, levelAreas];
     };
-    exports.distAreaTargets = function(targets, pos){
-        if(!targets) return null;
-        var result = null;
-        for(var i = 0; i < targets.length; ++i){
-            var target = targets[i];
-            var res = target.d+Math.abs(target.x-pos.x)+Math.abs(target.y-pos.y);
-            if(result == null || res < result) result = res;
-        }
-        return result;
-    };
     exports.dist = function(level, areas, levelAreas, areaTargets, pos){
-        var result = null;
+        var dist = null;
+        var possibilities = [];
         for(var i = 0; i < levelAreas[pos.x][pos.y].length; ++i){
             var targets = areaTargets[levelAreas[pos.x][pos.y][i]];
-            var res = exports.distAreaTargets(targets, pos);
-            if(result == null || res < result) result = res;
+            if(!targets) continue;
+            var dista = null;
+            var poss = [];
+            for(var j = 0; j < targets.length; ++j){
+                var target = targets[j];
+                var dx = target.x-pos.x;
+                var dy = target.y-pos.y;
+                var dis = target.d+Math.abs(dx)+Math.abs(dy);
+                if(dista !== null && dis > dista) continue;
+                if(dis < dista) poss = [];
+                dista = dis;
+                poss.push([dista, {
+                    x: Math.sign(dx),
+                    y: Math.sign(dy)
+                }]);
+            }
+            if(poss.length == 0) continue;
+            var d;
+            var direction;
+            [d, direction] = poss[Math.floor(Math.random()*poss.length)];
+            if(dist !== null && (d > dist || (direction.x == 0 && direction.y == 0))) continue;
+            if(d < dist) possibilities = [];
+            dist = d;
+            possibilities.push(direction);
         }
-        return result;
+        return possibilities[Math.floor(Math.random()*possibilities.length)];
     };
     exports.search = function(level, areas, levelAreas, pos){
         var areaTargets = [];
@@ -185,7 +198,7 @@
                 if(this[i].d >= e.d) break;
             }
             this.splice(i, 0, e);
-        }
+        };
         var count = 0;
         while(check.length > 0){
             ++count;
@@ -193,7 +206,36 @@
             for(var i = 0; i < levelAreas[p.x][p.y].length; ++i){
                 var targets = areaTargets[levelAreas[p.x][p.y][i]];
                 if(!targets) continue;
-                var dist = exports.distAreaTargets(targets, p);
+                var pos = p;
+                var dist;
+                if(!targets) [dist, direction] = [null, null];
+                else{
+                    var dista = null;
+                    var direc = {
+                        x: 0,
+                        y: 0
+                    };
+                    var poss = [];
+                    for(var j = 0; j < targets.length; ++j){
+                        var target = targets[j];
+                        var dx = target.x-pos.x;
+                        var dy = target.y-pos.y;
+                        var dis = target.d+Math.abs(dx)+Math.abs(dy);
+                        if(dista == null || dis <= dista){
+                            if(dis < dista) poss = [];
+                            dista = dis;
+                            direc.x = 0;
+                            direc.y = 0;
+                            if(dx > 0) direc.x = 1;
+                            if(dx < 0) direc.x = -1;
+                            if(dy > 0) direc.y = 1;
+                            if(dy < 0) direc.y = -1;
+                            poss.push([dista, direc]);
+                        }
+                    }
+                    if(poss.length == 0) [dist, direction] = [null, null];
+                    else [dist, direction] = poss[Math.floor(Math.random()*poss.length)];
+                }
                 if(dist !== null && p.d >= dist) continue;
                 targets.push(p);
     
@@ -238,47 +280,5 @@
             }
         }
         return areaTargets;
-    };
-    exports.distance = function(level, pos){
-        result = new Array(level.length);
-        for(var i = 0; i < result.length; ++i){
-            result[i] = new Array(level[i].length);
-            for(var j = 0; j < result[i].length; ++j){
-                result[i][j] = level.length*10;
-            }
-        }
-        var check = [pos];
-        pos.d = 0;
-        var bla = 0;
-        while(check.length > 0){
-            ++bla;
-            var p = check[0];
-            check.shift();
-            if(p.x < 0 || p.x >= level.length || p.y < 0 || p.y >= level[0].length) continue;
-            if(level[p.x][p.y] == 1) continue;
-            if(result[p.x][p.y] != level.length*10) continue;
-            result[p.x][p.y] = p.d;
-            check.push({
-                x: p.x-1,
-                y: p.y,
-                d: p.d+1
-            });
-            check.push({
-                x: p.x+1,
-                y: p.y,
-                d: p.d+1
-            });
-            check.push({
-                x: p.x,
-                y: p.y-1,
-                d: p.d+1
-            });
-            check.push({
-                x: p.x,
-                y: p.y+1,
-                d: p.d+1
-            });
-        }
-        return result;
     };
 }(typeof exports === 'undefined' ? this.shared = {} : exports));

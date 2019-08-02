@@ -17,14 +17,14 @@ wss.getUniqueID = function () {
 };
 
 var levelSize = 1000;
-var startNumber = 3000;
+var startNumber = 100;
 var rng = new shared.Random(123);
 
 var clients = {};
 var fighters = [];
 var level = new Array(levelSize);
 var metaballs = [];
-for(var i = 0; i < 400; ++i){
+for(var i = 0; i < 700; ++i){
     metaballs.push({
         x: Math.random()*levelSize,
         y: Math.random()*levelSize
@@ -65,7 +65,7 @@ setInterval(function(){
             levelSize: levelSize
         }));
     });
-}, 1000/60);
+}, 1000/30);
 
 wss.on('connection', function(ws) {
     ws.id = wss.getUniqueID();
@@ -104,7 +104,7 @@ wss.on('connection', function(ws) {
         seed: rng.seed
     }));
     ws.on('message', function(msg) {
-        var maxSpeed = 10;
+        var maxSpeed = 2;
         var d = JSON.parse(msg);
         var len = Math.sqrt(d.x*d.x+d.y*d.y);
         len /= maxSpeed;
