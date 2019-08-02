@@ -14,10 +14,12 @@
         </style>
     </head>
     <body>
+        <script src="js/shared.js"></script>
         <script>
-            var radius = 50;
             var player = null;
-            var levelSize = null;
+            var fighters = [];
+            var level = null;
+            var rng = null;
 
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
@@ -27,42 +29,130 @@
             }
             document.body.onresize();
             document.body.appendChild(canvas);
-            var ctx = canvas.getContext("2d");
+            var ctx = canvas.getContext('2d');
+
+            var off = document.createElement('canvas');
+            var offctx = null;
+            var imagedata = null;
+            var pixels = null;
 
             var ws = new WebSocket((location.host.match(/^localhost:\d+$/) ? 'ws://' : 'wss://') + location.host);
             ws.onopen = function() {
+                var vel = {
+                    x: 0,
+                    y: 0
+                };
                 document.body.onmousemove = function(event) {
                     if(player == null) return;
                     var dx = event.clientX-canvas.width/2;
                     var dy = event.clientY-canvas.height/2;
-                    var speedScale = 0.01;
-                    ws.send(JSON.stringify({
+                    var speedScale = 0.005;
+                    vel = {
                         x: dx*speedScale,
                         y: dy*speedScale
-                    }));
+                    };
                 };
+                setInterval(function(){
+                    ws.send(JSON.stringify(vel));
+                }, 1000/60);
             };
             ws.onmessage = function(event) {
                 var data = JSON.parse(event.data);
-                levelSize = data.levelSize;
+                if(data.fighters){
+                    fighters = data.fighters;
+                    level = data.level;
+                    off.width = level.length;
+                    off.height = level[0].length;
+                    offctx = off.getContext('2d');
+                    imagedata = offctx.createImageData(level.length, level[0].length);
+                    pixels = new Uint32Array(imagedata.data.buffer);
+                    for(var i = 0; i < level.length; ++i){
+                        for(var j = 0; j < level[0].length; ++j){
+                            var r = 0;
+                            var g = 0;
+                            var b = 0;
+                            if(level[i][j] === true) pixels[i+j*level.length] = ((255 << 8 | r) << 8 | g) << 8 | b;
+                            else pixels[i+j*level.length] = 0;
+                        }
+                    }
+                    for(var i = 0; i < fighters.length; ++i){
+                        level[fighters[i].x][fighters[i].y] = fighters[i];
+                    }
+                    rng = new shared.Random(data.seed);
+                    return;
+                }
                 player = data.player;
+                var dist = {};
+                for(var i = 0; i < Object.keys(data.players).length; ++i){
+                    var id = Object.keys(data.players)[i];
+                    var p = data.players[id];
+                    p.pos.x += p.vel.x;
+                    p.pos.y += p.vel.y;
+                    if(p.pos.x < 0) p.pos.x = 0;
+                    if(p.pos.x > level.length) p.pos.x = level.length;
+                    if(p.pos.y < 0) p.pos.y = 0;
+                    if(p.pos.y > level[0].length) p.pos.y = level[0].length;
+                    dist[id] = shared.distance(level, {
+                        x: Math.min(Math.floor(p.pos.x), level.length-1),
+                        y: Math.min(Math.floor(p.pos.y), level[0].length-1)
+                    });
+                }
+                for(var i = 0; i < fighters.length; ++i){
+                    var possibilities = [];
+                    for(var x = -1; x <= 1; ++x){
+                        for(var y = -1; y <= 1; ++y){
+                            if(Math.abs(x)+Math.abs(y) == 2) continue;
+                            var possibility = {
+                                x: fighters[i].x+x,
+                                y: fighters[i].y+y
+                            };
+                            if(possibility.x < 0 || possibility.x >= level.length || possibility.y < 0 || possibility.y >= level[0].length) continue;
+                            possibility.d = dist[id][possibility.x][possibility.y]+Math.abs(x)+Math.abs(y);
+                            if(x == 0 && y == 0) continue;
+                            if(level[possibility.x][possibility.y] != false) continue;
+                            possibilities.push(possibility);
+                        }
+                    }
+                    for(var k = 0; k < possibilities.length-1; ++k) for(var j = 0; j < possibilities.length-1; ++j){
+                        if(possibilities[j].d < possibilities[j+1].d) continue;
+                        if(possibilities[j].d == possibilities[j+1].d && Math.random() < 0.5) continue;
+                        var p = possibilities[j];
+                        possibilities[j] = possibilities[j+1];
+                        possibilities[j+1] = p;
+                    }
+                    if(possibilities.length == 0) continue;
+                    level[possibilities[0].x][possibilities[0].y] = fighters[i];
+                    level[fighters[i].x][fighters[i].y] = false;
+                    pixels[fighters[i].x+fighters[i].y*level.length] = 0;
+                    fighters[i].x = possibilities[0].x;
+                    fighters[i].y = possibilities[0].y;
+                    pixels[fighters[i].x+fighters[i].y*level.length] = 255 << 24 | (0.5 + 0.8 * 255);
+                }
+                // draw
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.save()
-                ctx.translate(canvas.width/2-player.pos.x, canvas.height/2-player.pos.y);
-                var d = 50;
-                var n = levelSize/d;
-                ctx.lineWidth = 0.5;
-                for(var i = 0; i <= n; ++i){
+                ctx.translate(canvas.width/2, canvas.height/2);
+                var scale = 2;
+                ctx.scale(scale, scale);
+                ctx.translate(-player.pos.x, -player.pos.y);
+                ctx.lineWidth = 0.1;
+                for(var i = 0; i <= level.length; i += level.length){
                     ctx.beginPath();
-                    ctx.moveTo(0, d*i);
-                    ctx.lineTo(d*n, d*i);
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(level.length, i);
                     ctx.stroke();
                     ctx.beginPath();
-                    ctx.moveTo(d*i, 0);
-                    ctx.lineTo(d*i, d*n);
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, level[0].length);
                     ctx.stroke();
                 }
-                ctx.lineWidth = 1;
+                ctx.lineWidth = 0.1;
+                ctx.fillStyle = "black";
+                offctx.clearRect(0, 0, off.width, off.height);
+                offctx.putImageData(imagedata, 0, 0);
+                ctx.drawImage(off, 0, 0, level.length, level[0].length);
+
+                var radius = 1;
                 for(var i = 0; i < Object.keys(data.players).length; ++i){
                     var p = data.players[Object.keys(data.players)[i]];
                     if(p.id == data.player.id) ctx.fillStyle = "green";
@@ -70,10 +160,6 @@
                     ctx.beginPath();
                     ctx.arc(p.pos.x, p.pos.y, radius, 0, 2*Math.PI);
                     ctx.fill();
-                    ctx.beginPath();
-                    ctx.moveTo(p.pos.x, p.pos.y);
-                    ctx.lineTo(p.pos.x+p.vel.x*radius*2, p.pos.y+p.vel.y*radius*2);
-                    ctx.stroke();
                 }
                 ctx.restore();
             };
