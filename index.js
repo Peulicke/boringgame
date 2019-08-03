@@ -16,8 +16,8 @@ wss.getUniqueID = function () {
     return s4()+s4()+s4();
 };
 
-var levelSize = 600;
-var startNumber = 3000;
+var levelSize = 2000;
+var startNumber = 1000;
 var rng = new shared.Random(123);
 
 var clients = {};
@@ -104,7 +104,7 @@ wss.on('connection', function(ws) {
         seed: rng.seed
     }));
     ws.on('message', function(msg) {
-        var maxSpeed = 2;
+        var maxSpeed = 1;
         var d = JSON.parse(msg);
         var len = Math.sqrt(d.x*d.x+d.y*d.y);
         len /= maxSpeed;

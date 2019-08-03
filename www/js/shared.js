@@ -38,7 +38,6 @@
             return holeCount;
         }
         var list = [];
-        
         for(var i = 0; i < level.length; ++i){
             for(var j = 0; j < level[i].length; ++j){
                 list.push([i, j]);
@@ -159,9 +158,9 @@
             dist = d;
             possibilities.push(direction);
         }
-        return possibilities[Math.floor(Math.random()*possibilities.length)];
+        return [dist, possibilities[Math.floor(Math.random()*possibilities.length)]];
     };
-    exports.search = function(level, areas, levelAreas, pos){
+    exports.search = function(level, areas, levelAreas, pos, maxDist){
         var areaTargets = [];
         for(var i = 0; i < areas.length; ++i){
             areaTargets.push([]);
@@ -203,6 +202,7 @@
         while(check.length > 0){
             ++count;
             var p = check.shift();
+            if(p.d > maxDist) break;
             for(var i = 0; i < levelAreas[p.x][p.y].length; ++i){
                 var targets = areaTargets[levelAreas[p.x][p.y][i]];
                 if(!targets) continue;

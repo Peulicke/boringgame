@@ -21,6 +21,7 @@
             var level = null;
             var areas = [];
             var levelAreas = null;
+            var maxDist = null;
 
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
@@ -75,8 +76,11 @@
                     fighter.y = y;
                     return true;
                 }
+                maxDist = 0;
                 for(var i = 0; i < fighters.length; ++i){
-                    var dir = shared.dist(level, areas, levelAreas, areaTargets, fighters[i]);
+                    var dist, dir;
+                    [dist, dir] = shared.dist(level, areas, levelAreas, areaTargets, fighters[i]);
+                    maxDist = Math.max(maxDist, dist);
                     if(!dir) continue;
                     var m = Math.abs(dir.x)+Math.abs(dir.y);
                     if(m == 0) continue;
@@ -130,7 +134,7 @@
                         x: Math.min(Math.floor(p.pos.x), level.length-1),
                         y: Math.min(Math.floor(p.pos.y), level[0].length-1)
                     };
-                    areaTargets = shared.search(level, areas, levelAreas, pos);
+                    areaTargets = shared.search(level, areas, levelAreas, pos, maxDist);
                 }
                 moveFighters();
             }
