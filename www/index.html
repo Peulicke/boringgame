@@ -17,12 +17,8 @@
         <script src="js/shared.js"></script>
         <script>
             var player = null;
-            var fighters = [];
-            var level = null;
-            var areas = [];
-            var levelAreas = null;
-            var maxDist = null;
             var debug = false;
+            var game;
 
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
@@ -65,96 +61,15 @@
                     ws.send(JSON.stringify(vel));
                 }, 1000/60);
             };
-            function moveFighters(){
-                function move(fighter, dx, dy){
-                    var x = fighter.x+dx;
-                    var y = fighter.y+dy;
-                    if(x < 0) return false;
-                    if(y < 0) return false;
-                    if(x >= level.length) return false;
-                    if(y >= level[0].length) return false;
-                    if(level[x][y] !== false) return false;
-                    level[x][y] = fighter;
-                    level[fighter.x][fighter.y] = false;
-                    fighter.x = x;
-                    fighter.y = y;
-                    return true;
-                }
-                var maxDistPrev = maxDist;
-                maxDist = 0;
-                for(var i = 0; i < fighters.length; ++i){
-                    var dist, dir;
-                    [dist, dir] = shared.dist(level, areas, levelAreas, areaTargets, fighters[i]);
-                    maxDist = Math.max(maxDist, dist);
-                    if(!dir){
-                        maxDist = maxDistPrev+1;
-                        continue;
-                    }
-                    var m = Math.abs(dir.x)+Math.abs(dir.y);
-                    if(m == 0) continue;
-                    if(m == 1){
-                        if(move(fighters[i], dir.x, dir.y)) continue;
-                        var rand = (Math.random() < 0.5);
-                        if(rand){
-                            if(move(fighters[i], dir.x-dir.y, dir.x+dir.y)) continue;
-                        }
-                        else{
-                            if(move(fighters[i], dir.x+dir.y, dir.y-dir.x)) continue;
-                        }
-                        rand = (Math.random() < 0.5);
-                        if(rand){
-                            if(move(fighters[i], -dir.y, dir.x)) continue;
-                        }
-                        else{
-                            if(move(fighters[i], dir.y, -dir.x)) continue;
-                        }
-                    }
-                    if(m == 2){
-                        if(move(fighters[i], dir.x, dir.y)) continue;
-                        var rand = (Math.random() < 0.5);
-                        if(rand){
-                            if(move(fighters[i], dir.x, 0)) continue;
-                        }
-                        else{
-                            if(move(fighters[i], 0, dir.y)) continue;
-                        }
-                        rand = (Math.random() < 0.5);
-                        if(rand){
-                            if(move(fighters[i], -dir.y, dir.x)) continue;
-                        }
-                        else{
-                            if(move(fighters[i], dir.y, -dir.x)) continue;
-                        }
-                    }
-                }
-            }
-            function update(data){
-                for(var i = 0; i < Object.keys(data.players).length; ++i){
-                    var id = Object.keys(data.players)[i];
-                    var p = data.players[id];
-                    p.pos.x += p.vel.x;
-                    p.pos.y += p.vel.y;
-                    if(p.pos.x < 0) p.pos.x = 0;
-                    if(p.pos.x > level.length) p.pos.x = level.length;
-                    if(p.pos.y < 0) p.pos.y = 0;
-                    if(p.pos.y > level[0].length) p.pos.y = level[0].length;
-                    var pos = {
-                        x: Math.min(Math.floor(p.pos.x), level.length-1),
-                        y: Math.min(Math.floor(p.pos.y), level[0].length-1)
-                    };
-                    areaTargets = shared.search(level, areas, levelAreas, pos, maxDist+1);
-                }
-                moveFighters();
-            }
             function drawDebug(){
                 ctx.lineWidth = 0.5;
                 ctx.strokeStyle = "blue";
-                for(var i = 0; i < areas.length; ++i){
-                    ctx.strokeRect(areas[i].x1+0.5, areas[i].y1+0.5, areas[i].x2-areas[i].x1, areas[i].y2-areas[i].y1);
+                for(var i = 0; i < game.areas.length; ++i){
+                    ctx.strokeRect(game.areas[i].x1+0.5, game.areas[i].y1+0.5, game.areas[i].x2-game.areas[i].x1, game.areas[i].y2-game.areas[i].y1);
                 }
-                for(var i = 0; i < areaTargets.length; ++i){
-                    for(var j = 0; j < areaTargets[i].length; ++j){
-                        ctx.fillRect(areaTargets[i][j].x, areaTargets[i][j].y, 1, 1);
+                for(var i = 0; i < game.areaTargets.length; ++i){
+                    for(var j = 0; j < game.areaTargets[i].length; ++j){
+                        ctx.fillRect(game.areaTargets[i][j].x, game.areaTargets[i][j].y, 1, 1);
                     }
                 }
             }
@@ -166,14 +81,14 @@
                 ctx.scale(scale, scale);
                 ctx.translate(-player.pos.x, -player.pos.y);
                 ctx.lineWidth = 0.1;
-                for(var i = 0; i <= level.length; i += level.length){
+                for(var i = 0; i <= game.level.length; i += game.level.length){
                     ctx.beginPath();
                     ctx.moveTo(0, i);
-                    ctx.lineTo(level.length, i);
+                    ctx.lineTo(game.level.length, i);
                     ctx.stroke();
                     ctx.beginPath();
                     ctx.moveTo(i, 0);
-                    ctx.lineTo(i, level[0].length);
+                    ctx.lineTo(i, game.level[0].length);
                     ctx.stroke();
                 }
                 ctx.lineWidth = 0.1;
@@ -194,19 +109,19 @@
                         var x = pos.x-viewRadius+i;
                         var y = pos.y-viewRadius+j;
                         if(x < 0) continue;
-                        if(x >= level.length) continue;
+                        if(x >= game.level.length) continue;
                         if(y < 0) continue;
-                        if(y >= level[0].length) continue;
+                        if(y >= game.level[0].length) continue;
                         var r = 0;
                         var g = 0;
                         var b = 0;
-                        if(level[x][y] === true) pixels[i+j*viewRadius*2] = ((255 << 8 | r) << 8 | g) << 8 | b;
+                        if(game.level[x][y] === true) pixels[i+j*viewRadius*2] = ((255 << 8 | r) << 8 | g) << 8 | b;
                         else pixels[i+j*viewRadius*2] = 0;
                     }
                 }
-                for(var i = 0; i < fighters.length; ++i){
-                    var x = fighters[i].x-(pos.x-viewRadius);
-                    var y = fighters[i].y-(pos.y-viewRadius);
+                for(var i = 0; i < game.fighters.length; ++i){
+                    var x = game.fighters[i].x-(pos.x-viewRadius);
+                    var y = game.fighters[i].y-(pos.y-viewRadius);
                     if(x < 0) continue;
                     if(x >= viewRadius*2) continue;
                     if(y < 0) continue;
@@ -232,16 +147,10 @@
                 var data = JSON.parse(event.data);
                 player = data.player;
                 if(data.fighters){
-                    fighters = data.fighters;
-                    level = data.level;
-                    [areas, levelAreas] = shared.computeAreas(level);
-                    
-                    for(var i = 0; i < fighters.length; ++i){
-                        level[fighters[i].x][fighters[i].y] = fighters[i];
-                    }
+                    game = new shared.Game(data.level, data.fighters);
                     return;
                 }
-                update(data);
+                game.update(data);
                 draw(data);
             };
         </script>

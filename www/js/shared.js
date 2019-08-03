@@ -267,4 +267,95 @@
         }
         return areaTargets;
     };
+    exports.Game = function(level, fighters){
+        this.level = level;
+        this.fighters = fighters;
+        this.areaTargets = null;
+        this.maxDist = null;
+        [this.areas, this.levelAreas] = exports.computeAreas(level);
+        for(var i = 0; i < fighters.length; ++i){
+            level[fighters[i].x][fighters[i].y] = fighters[i];
+        }
+    };
+    exports.Game.prototype.moveFighters = function(){
+        function move(fighter, dx, dy){
+            var x = fighter.x+dx;
+            var y = fighter.y+dy;
+            if(x < 0) return false;
+            if(y < 0) return false;
+            if(x >= this.level.length) return false;
+            if(y >= this.level[0].length) return false;
+            if(this.level[x][y] !== false) return false;
+            this.level[x][y] = fighter;
+            this.level[fighter.x][fighter.y] = false;
+            fighter.x = x;
+            fighter.y = y;
+            return true;
+        }
+        var maxDistPrev = this.maxDist;
+        this.maxDist = 0;
+        for(var i = 0; i < this.fighters.length; ++i){
+            var dist, dir;
+            [dist, dir] = shared.dist(this.level, this.areas, this.levelAreas, this.areaTargets, this.fighters[i]);
+            this.maxDist = Math.max(this.maxDist, dist);
+            if(!dir){
+                this.maxDist = maxDistPrev+1;
+                continue;
+            }
+            var m = Math.abs(dir.x)+Math.abs(dir.y);
+            if(m == 0) continue;
+            if(m == 1){
+                if(move.call(this, this.fighters[i], dir.x, dir.y)) continue;
+                var rand = (Math.random() < 0.5);
+                if(rand){
+                    if(move.call(this, this.fighters[i], dir.x-dir.y, dir.x+dir.y)) continue;
+                }
+                else{
+                    if(move.call(this, this.fighters[i], dir.x+dir.y, dir.y-dir.x)) continue;
+                }
+                rand = (Math.random() < 0.5);
+                if(rand){
+                    if(move.call(this, this.fighters[i], -dir.y, dir.x)) continue;
+                }
+                else{
+                    if(move.call(this, this.fighters[i], dir.y, -dir.x)) continue;
+                }
+            }
+            if(m == 2){
+                if(move.call(this, this.fighters[i], dir.x, dir.y)) continue;
+                var rand = (Math.random() < 0.5);
+                if(rand){
+                    if(move.call(this, this.fighters[i], dir.x, 0)) continue;
+                }
+                else{
+                    if(move.call(this, this.fighters[i], 0, dir.y)) continue;
+                }
+                rand = (Math.random() < 0.5);
+                if(rand){
+                    if(move.call(this, this.fighters[i], -dir.y, dir.x)) continue;
+                }
+                else{
+                    if(move.call(this, this.fighters[i], dir.y, -dir.x)) continue;
+                }
+            }
+        }
+    };
+    exports.Game.prototype.update = function(data){
+        for(var i = 0; i < Object.keys(data.players).length; ++i){
+            var id = Object.keys(data.players)[i];
+            var p = data.players[id];
+            p.pos.x += p.vel.x;
+            p.pos.y += p.vel.y;
+            if(p.pos.x < 0) p.pos.x = 0;
+            if(p.pos.x > this.level.length) p.pos.x = this.level.length;
+            if(p.pos.y < 0) p.pos.y = 0;
+            if(p.pos.y > this.level[0].length) p.pos.y = this.level[0].length;
+            var pos = {
+                x: Math.min(Math.floor(p.pos.x), this.level.length-1),
+                y: Math.min(Math.floor(p.pos.y), this.level[0].length-1)
+            };
+            this.areaTargets = shared.search(this.level, this.areas, this.levelAreas, pos, this.maxDist+1);
+        }
+        this.moveFighters();
+    };
 }(typeof exports === 'undefined' ? this.shared = {} : exports));
