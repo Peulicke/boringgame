@@ -41,7 +41,7 @@
                     x: 0,
                     y: 0
                 };
-                document.body.onmousemove = document.body.ontouchmove = function(event) {
+                document.body.onmousemove = function(event) {
                     if(player == null) return;
                     var dx = event.clientX-canvas.width/2;
                     var dy = event.clientY-canvas.height/2;
@@ -51,6 +51,11 @@
                         y: dy*speedScale
                     };
                 };
+                document.body.ontouchmove = function(event){
+                    event.clientX = event.touches[0].clientX;
+                    event.clientY = event.touches[0].clientY;
+                    document.body.onmousemove(event);
+                }
                 setInterval(function(){
                     ws.send(JSON.stringify(vel));
                 }, 1000/60);
