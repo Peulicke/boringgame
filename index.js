@@ -24,7 +24,7 @@ var clients = {};
 var fighters = [];
 var level = new Array(levelSize);
 var metaballs = [];
-for(var i = 0; i < 200; ++i){
+for(var i = 0; i < 400; ++i){
     metaballs.push({
         x: Math.random()*levelSize,
         y: Math.random()*levelSize
@@ -81,9 +81,14 @@ wss.on('connection', function(ws) {
             y: 0
         }
     };
-    function addFighter(){
-        var x = Math.floor(Math.random()*levelSize);
-        var y = Math.floor(Math.random()*levelSize);
+    function addFighter(dist){
+        var d = Math.sqrt(dist);
+        var x = Math.floor(ws.data.pos.x+Math.random()*d*2-d);
+        var y = Math.floor(ws.data.pos.y+Math.random()*d*2-d);
+        if(x < 0) x = 0;
+        if(x >= level.length) x = level.length-1;
+        if(y < 0) y = 0;
+        if(y >= level[0].length) y = level[0].length-1;
         if(level[x][y]) return false;
         var fighter = {
             x: x,
@@ -94,8 +99,9 @@ wss.on('connection', function(ws) {
         level[x][y] = fighter;
         return true;
     }
+    var dist = 0;
     for(var i = 0; i < startNumber; ++i){
-        while(!addFighter());
+        while(!addFighter(dist)) ++dist;
     }
     ws.send(JSON.stringify({
         fighters: fighters,

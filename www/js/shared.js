@@ -37,83 +37,69 @@
             }
             return holeCount;
         }
-        var list = [];
         for(var i = 0; i < level.length; ++i){
             for(var j = 0; j < level[i].length; ++j){
-                list.push([i, j]);
+                if(level[i][j] === true) continue;
+                if(levelAreas[i][j][0] !== null && levelAreas[i][j][1] !== null && levelAreas[i][j][2] !== null && levelAreas[i][j][3] !== null) continue;
+                var x1 = i;
+                var x2 = i;
+                var y1 = j;
+                var y2 = j;
+                for(var change = true; change;){
+                    change = false;
+                    if(x2+1 < level.length && increaseOnly(x2, y1, x2+1, y1, 0, y2-y1) && holes(x2, y1, 0, y2-y1) == 1 && holes(x2+1, y1, 0, y2-y1) <= 1){
+                        ++x2;
+                        change = true;
+                    }
+                    if(y2+1 < level[0].length && increaseOnly(x1, y2, x1, y2+1, x2-x1, 0) && holes(x1, y2, x2-x1, 0) == 1 && holes(x1, y2+1, x2-x1, 0) <= 1){
+                        ++y2;
+                        change = true;
+                    }
+                    if(x1-1 >= 0 && increaseOnly(x1, y1, x1-1, y1, 0, y2-y1) && holes(x1, y1, 0, y2-y1) == 1 && holes(x1-1, y1, 0, y2-y1) <= 1){
+                        --x1;
+                        change = true;
+                    }
+                    if(y1-1 >= 0 && increaseOnly(x1, y1, x1, y1-1, x2-x1, 0) && holes(x1, y1, x2-x1, 0) == 1 && holes(x1, y1-1, x2-x1, 0) <= 1){
+                        --y1;
+                        change = true;
+                    }
+                }
+                var area = {
+                    x1: x1,
+                    y1: y1,
+                    x2: x2,
+                    y2: y2
+                };
+                if(x1 == 0) --x1;
+                if(x2 == level.length-1) ++x2;
+                if(y1 == 0) --y1;
+                if(y2 == level[0].length-1) ++y2;
+                for(var x = x1; x < x2; ++x){
+                    for(var y = y1; y < y2; ++y){
+                        if(!levelAreas[x] || !levelAreas[x][y]) continue;
+                        levelAreas[x][y][0] = areas.length;
+                    }
+                }
+                for(var x = x1+1; x <= x2; ++x){
+                    for(var y = y1; y < y2; ++y){
+                        if(!levelAreas[x] || !levelAreas[x][y]) continue;
+                        levelAreas[x][y][1] = areas.length;
+                    }
+                }
+                for(var x = x1+1; x <= x2; ++x){
+                    for(var y = y1+1; y <= y2; ++y){
+                        if(!levelAreas[x] || !levelAreas[x][y]) continue;
+                        levelAreas[x][y][2] = areas.length;
+                    }
+                }
+                for(var x = x1; x < x2; ++x){
+                    for(var y = y1+1; y <= y2; ++y){
+                        if(!levelAreas[x] || !levelAreas[x][y]) continue;
+                        levelAreas[x][y][3] = areas.length;
+                    }
+                }
+                areas.push(area);
             }
-        }
-        function shuffle(a) {
-            for (var i = a.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                [a[i], a[j]] = [a[j], a[i]];
-            }
-            return a;
-        }
-        shuffle(list);
-        for(var k = 0; k < list.length; ++k){
-            var i = list[k][0];
-            var j = list[k][1];
-            if(level[i][j] === true) continue;
-            if(levelAreas[i][j][0] !== null && levelAreas[i][j][1] !== null && levelAreas[i][j][2] !== null && levelAreas[i][j][3] !== null) continue;
-            var x1 = i;
-            var x2 = i;
-            var y1 = j;
-            var y2 = j;
-            for(var change = true; change;){
-                change = false;
-                if(x2+1 < level.length && increaseOnly(x2, y1, x2+1, y1, 0, y2-y1) && holes(x2, y1, 0, y2-y1) == 1 && holes(x2+1, y1, 0, y2-y1) <= 1){
-                    ++x2;
-                    change = true;
-                }
-                if(y2+1 < level[0].length && increaseOnly(x1, y2, x1, y2+1, x2-x1, 0) && holes(x1, y2, x2-x1, 0) == 1 && holes(x1, y2+1, x2-x1, 0) <= 1){
-                    ++y2;
-                    change = true;
-                }
-                if(x1-1 >= 0 && increaseOnly(x1, y1, x1-1, y1, 0, y2-y1) && holes(x1, y1, 0, y2-y1) == 1 && holes(x1-1, y1, 0, y2-y1) <= 1){
-                    --x1;
-                    change = true;
-                }
-                if(y1-1 >= 0 && increaseOnly(x1, y1, x1, y1-1, x2-x1, 0) && holes(x1, y1, x2-x1, 0) == 1 && holes(x1, y1-1, x2-x1, 0) <= 1){
-                    --y1;
-                    change = true;
-                }
-            }
-            var area = {
-                x1: x1,
-                y1: y1,
-                x2: x2,
-                y2: y2
-            };
-            if(x1 == 0) --x1;
-            if(x2 == level.length-1) ++x2;
-            if(y1 == 0) --y1;
-            if(y2 == level[0].length-1) ++y2;
-            for(var x = x1; x < x2; ++x){
-                for(var y = y1; y < y2; ++y){
-                    if(!levelAreas[x] || !levelAreas[x][y]) continue;
-                    levelAreas[x][y][0] = areas.length;
-                }
-            }
-            for(var x = x1+1; x <= x2; ++x){
-                for(var y = y1; y < y2; ++y){
-                    if(!levelAreas[x] || !levelAreas[x][y]) continue;
-                    levelAreas[x][y][1] = areas.length;
-                }
-            }
-            for(var x = x1+1; x <= x2; ++x){
-                for(var y = y1+1; y <= y2; ++y){
-                    if(!levelAreas[x] || !levelAreas[x][y]) continue;
-                    levelAreas[x][y][2] = areas.length;
-                }
-            }
-            for(var x = x1; x < x2; ++x){
-                for(var y = y1+1; y <= y2; ++y){
-                    if(!levelAreas[x] || !levelAreas[x][y]) continue;
-                    levelAreas[x][y][3] = areas.length;
-                }
-            }
-            areas.push(area);
         }
         for(var i = 0; i < levelAreas.length; ++i){
             for(var j = 0; j < levelAreas[i].length; ++j){

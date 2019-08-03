@@ -76,12 +76,16 @@
                     fighter.y = y;
                     return true;
                 }
+                var maxDistPrev = maxDist;
                 maxDist = 0;
                 for(var i = 0; i < fighters.length; ++i){
                     var dist, dir;
                     [dist, dir] = shared.dist(level, areas, levelAreas, areaTargets, fighters[i]);
                     maxDist = Math.max(maxDist, dist);
-                    if(!dir) continue;
+                    if(!dir){
+                        maxDist = maxDistPrev+1;
+                        continue;
+                    }
                     var m = Math.abs(dir.x)+Math.abs(dir.y);
                     if(m == 0) continue;
                     if(m == 1){
