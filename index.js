@@ -116,6 +116,7 @@ setInterval(function(){
     var res = {};
     wss.clients.forEach(function(client) {
         res[client.id] = Object.assign({}, client.data);
+        res[client.id].posSmooth = Object.assign({}, client.data.pos);
         res[client.id].pos = Object.assign({}, client.data.pos);
         res[client.id].pos.x = Math.min(Math.floor(res[client.id].pos.x), game.level.length-1);
         res[client.id].pos.y = Math.min(Math.floor(res[client.id].pos.y), game.level[0].length-1);
@@ -123,7 +124,7 @@ setInterval(function(){
     var seed = Math.floor(Math.random()*2147483647);
     wss.clients.forEach(function(client) {
         client.send(JSON.stringify({
-            player: client.data,
+            player: client.data.id,
             players: res,
             newFighters: newFighters,
             oldFighters: oldFighters,
