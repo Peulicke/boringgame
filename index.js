@@ -16,8 +16,8 @@ wss.getUniqueID = function () {
     return s4()+s4()+s4();
 };
 
-var levelSize = 750;
-var startNumber = 1000;
+var levelSize = 600;
+var startNumber = 3000;
 var rng = new shared.Random(123);
 
 var clients = {};
