@@ -18,7 +18,7 @@
         this.rng = null;
         [this.areas, this.levelAreas] = this.computeAreas(this.level);
         for(var i = 0; i < this.fighters.length; ++i){
-            this.level[this.fighters[i].x][this.fighters[i].y] = fighters[i];
+            this.level[this.fighters[i].x][this.fighters[i].y] = this.fighters[i];
         }
     };
     exports.Game.prototype.computeAreas = function(level){
@@ -203,7 +203,7 @@
         while(check.length > 0){
             ++count;
             var p = check.shift();
-            if(p.d > maxDist) break;
+            //if(p.d > maxDist) break;
             for(var i = 0; i < levelAreas[p.x][p.y].length; ++i){
                 var targets = areaTargets[levelAreas[p.x][p.y][i]];
                 if(!targets) continue;
@@ -353,8 +353,7 @@
             this.fighters.splice(i, 1);
         }
     };
-    exports.Game.prototype.update = function(players, player, newFighters, oldFighters, seed){
-        this.rng = new exports.Random(seed);
+    exports.Game.prototype.updateFighters = function(newFighters, oldFighters){
         for(var i = 0; i < newFighters.length; ++i){
             this.level[newFighters[i].x][newFighters[i].y] = newFighters[i].id;
             this.fighters.push(newFighters[i]);
@@ -362,23 +361,16 @@
         for(var i = 0; i < oldFighters.length; ++i){
             this.removeFighters(oldFighters[i]);
         }
+    };
+    exports.Game.prototype.update = function(players, player, seed){
         this.players = players;
         this.player = player;
+        this.rng = new exports.Random(seed);
         var areaTargets = {};
         for(var i = 0; i < Object.keys(this.players).length; ++i){
             var id = Object.keys(this.players)[i];
             var p = this.players[id];
-            p.pos.x += p.vel.x;
-            p.pos.y += p.vel.y;
-            if(p.pos.x < 0) p.pos.x = 0;
-            if(p.pos.x > this.level.length) p.pos.x = this.level.length;
-            if(p.pos.y < 0) p.pos.y = 0;
-            if(p.pos.y > this.level[0].length) p.pos.y = this.level[0].length;
-            var pos = {
-                x: Math.min(Math.floor(p.pos.x), this.level.length-1),
-                y: Math.min(Math.floor(p.pos.y), this.level[0].length-1)
-            };
-            areaTargets[id] = this.search(this.level, this.areas, this.levelAreas, pos, this.maxDist+1);
+            areaTargets[id] = this.search(this.level, this.areas, this.levelAreas, p.pos, this.maxDist+1);
         }
         this.moveFighters(areaTargets);
     };

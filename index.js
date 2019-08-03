@@ -55,11 +55,17 @@ function addFighter(client, dist){
         y: y,
         id: client.id
     };
+    game.level[fighter.x][fighter.y] = fighter.id;
+    game.fighters.push(fighter);
     newFighters.push(fighter);
     return true;
 }
 
 function addPlayer(client){
+    client.send(JSON.stringify({
+        level: game.level,
+        fighters: game.fighters
+    }));
     client.data = {
         id: client.id,
         pos: {
@@ -71,10 +77,6 @@ function addPlayer(client){
             y: 0
         }
     };
-    client.send(JSON.stringify({
-        level: game.level,
-        fighters: game.fighters
-    }));
     client.on('message', function(msg) {
         var maxSpeed = 1;
         var d = JSON.parse(msg);
@@ -87,14 +89,18 @@ function addPlayer(client){
         client.data.vel = d;
     });
     client.on('close', function(){
+        game.removeFighters(client.id);
         oldFighters.push(client.id);
         delete clients[client.id];
     });
+    var oldGame = game;
+    game = new shared.Game(JSON.parse(JSON.stringify(game.level)), JSON.parse(JSON.stringify(game.fighters)));
     var startNumber = 100;
     var dist = 0;
     for(var i = 0; i < startNumber; ++i){
         while(!addFighter(client, dist)) ++dist;
     }
+    game = oldGame;
 }
 
 setInterval(function(){
@@ -109,7 +115,10 @@ setInterval(function(){
 
     var res = {};
     wss.clients.forEach(function(client) {
-        res[client.id] = client.data;
+        res[client.id] = Object.assign({}, client.data);
+        res[client.id].pos = Object.assign({}, client.data.pos);
+        res[client.id].pos.x = Math.min(Math.floor(res[client.id].pos.x), game.level.length-1);
+        res[client.id].pos.y = Math.min(Math.floor(res[client.id].pos.y), game.level[0].length-1);
     });
     var seed = Math.floor(Math.random()*2147483647);
     wss.clients.forEach(function(client) {
@@ -121,7 +130,8 @@ setInterval(function(){
             seed: seed
         }));
     });
-    game.update(res, null, newFighters, oldFighters, seed);
+    game.updateFighters(newFighters, oldFighters);
+    game.update(res, null, seed);
     newFighters = [];
     oldFighters = [];
 }, 1000/30);

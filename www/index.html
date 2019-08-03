@@ -24,6 +24,7 @@
             document.body.onresize = function(){
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
+                canvas.getContext('2d').imageSmoothingEnabled = false;
             }
             document.body.onresize();
             document.body.appendChild(canvas);
@@ -152,7 +153,8 @@
                     ctx.imageSmoothingEnabled = false;
                     return;
                 }
-                game.update(data.players, data.player, data.newFighters, data.oldFighters, data.seed);
+                game.updateFighters(data.newFighters, data.oldFighters);
+                game.update(data.players, data.player, data.seed);
                 draw();
             };
             ctx.imageSmoothingEnabled = false;
