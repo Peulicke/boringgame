@@ -16,9 +16,8 @@
     <body>
         <script src="js/shared.js"></script>
         <script>
-            var player = null;
             var debug = false;
-            var game;
+            var game = null;
 
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
@@ -40,7 +39,6 @@
                     y: 0
                 };
                 document.body.onmousemove = function(event) {
-                    if(player == null) return;
                     var dx = event.clientX-canvas.width/2;
                     var dy = event.clientY-canvas.height/2;
                     var speedScale = 0.005;
@@ -73,13 +71,13 @@
                     }
                 }
             }
-            function draw(data){
+            function draw(){
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.save()
                 ctx.translate(canvas.width/2, canvas.height/2);
                 var scale = 10;
                 ctx.scale(scale, scale);
-                ctx.translate(-player.pos.x, -player.pos.y);
+                ctx.translate(-game.player.pos.x, -game.player.pos.y);
                 ctx.lineWidth = 0.1;
                 for(var i = 0; i <= game.level.length; i += game.level.length){
                     ctx.beginPath();
@@ -101,8 +99,8 @@
                 imagedata = offctx.createImageData(viewRadius*2, viewRadius*2);
                 pixels = new Uint32Array(imagedata.data.buffer);
                 var pos = {
-                    x: Math.floor(player.pos.x),
-                    y: Math.floor(player.pos.y)
+                    x: Math.floor(game.player.pos.x),
+                    y: Math.floor(game.player.pos.y)
                 };
                 for(var i = 0; i < viewRadius*2; ++i){
                     for(var j = 0; j < viewRadius*2; ++j){
@@ -132,9 +130,9 @@
                 offctx.putImageData(imagedata, 0, 0);
                 ctx.drawImage(off, pos.x-viewRadius, pos.y-viewRadius, viewRadius*2, viewRadius*2);
                 var radius = 1;
-                for(var i = 0; i < Object.keys(data.players).length; ++i){
-                    var p = data.players[Object.keys(data.players)[i]];
-                    if(p.id == data.player.id) ctx.fillStyle = "green";
+                for(var i = 0; i < Object.keys(game.players).length; ++i){
+                    var p = game.players[Object.keys(game.players)[i]];
+                    if(p.id == game.player.id) ctx.fillStyle = "green";
                     else ctx.fillStyle = "black";
                     ctx.beginPath();
                     ctx.arc(p.pos.x, p.pos.y, radius, 0, 2*Math.PI);
@@ -145,13 +143,12 @@
             }
             ws.onmessage = function(event) {
                 var data = JSON.parse(event.data);
-                player = data.player;
                 if(data.fighters){
                     game = new shared.Game(data.level, data.fighters);
                     return;
                 }
-                game.update(data);
-                draw(data);
+                game.update(data.players, data.player);
+                draw();
             };
         </script>
     </body>

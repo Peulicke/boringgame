@@ -270,6 +270,8 @@
     exports.Game = function(level, fighters){
         this.level = level;
         this.fighters = fighters;
+        this.players = null;
+        this.player = null;
         this.areaTargets = null;
         this.maxDist = null;
         [this.areas, this.levelAreas] = exports.computeAreas(level);
@@ -340,10 +342,12 @@
             }
         }
     };
-    exports.Game.prototype.update = function(data){
-        for(var i = 0; i < Object.keys(data.players).length; ++i){
-            var id = Object.keys(data.players)[i];
-            var p = data.players[id];
+    exports.Game.prototype.update = function(players, player){
+        this.players = players;
+        this.player = player;
+        for(var i = 0; i < Object.keys(this.players).length; ++i){
+            var id = Object.keys(this.players)[i];
+            var p = this.players[id];
             p.pos.x += p.vel.x;
             p.pos.y += p.vel.y;
             if(p.pos.x < 0) p.pos.x = 0;
