@@ -17,14 +17,14 @@ wss.getUniqueID = function () {
 };
 
 var levelSize = 1000;
-var startNumber = 1000;
+var startNumber = 10000;
 var rng = new shared.Random(123);
 
 var clients = {};
 var fighters = [];
 var level = new Array(levelSize);
 var metaballs = [];
-for(var i = 0; i < 400; ++i){
+for(var i = 0; i < 500; ++i){
     metaballs.push({
         x: Math.random()*levelSize,
         y: Math.random()*levelSize
