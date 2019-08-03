@@ -9,22 +9,14 @@ app.use(express.static(__dirname + '/www'));
 var server = http.createServer(app);
 var wss = new WebSocket.Server({server});
 
-wss.getUniqueID = function () {
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-    }
-    return s4();
-};
-
-var levelSize = 700;
-var startNumber = 7000;
-var rng = new shared.Random(123);
-
 var clients = {};
-var fighters = [];
+
+var levelSize = 200;
+
 var level = new Array(levelSize);
+
 var metaballs = [];
-for(var i = 0; i < 500; ++i){
+for(var i = 0; i < 50; ++i){
     metaballs.push({
         x: Math.random()*levelSize,
         y: Math.random()*levelSize
@@ -44,72 +36,46 @@ for(var i = 0; i < levelSize; ++i){
     }
 }
 
-setInterval(function(){
-    wss.clients.forEach(function(client) {
-        client.data.pos.x += client.data.vel.x;
-        client.data.pos.y += client.data.vel.y;
-        if(client.data.pos.x < 0) client.data.pos.x = 0;
-        if(client.data.pos.x > levelSize) client.data.pos.x = levelSize;
-        if(client.data.pos.y < 0) client.data.pos.y = 0;
-        if(client.data.pos.y > levelSize) client.data.pos.y = levelSize;
-    });
+var game = new shared.Game(level, []);
 
-    var res = {};
-    wss.clients.forEach(function(client) {
-        res[client.id] = client.data;
-    });
-    wss.clients.forEach(function(client) {
-        client.send(JSON.stringify({
-            player: client.data,
-            players: res,
-            levelSize: levelSize
-        }));
-    });
-}, 1000/30);
+var newFighters = [];
+var oldFighters = [];
 
-wss.on('connection', function(ws) {
-    ws.id = wss.getUniqueID();
-    clients[ws.id] = ws;
-    ws.data = {
-        id: ws.id,
+function addFighter(client, dist){
+    var d = Math.sqrt(dist);
+    var x = Math.floor(client.data.pos.x+Math.random()*d*2-d);
+    var y = Math.floor(client.data.pos.y+Math.random()*d*2-d);
+    if(x < 0) x = 0;
+    if(x >= game.level.length) x = game.level.length-1;
+    if(y < 0) y = 0;
+    if(y >= game.level[0].length) y = game.level[0].length-1;
+    if(game.level[x][y]) return false;
+    var fighter = {
+        x: x,
+        y: y,
+        id: client.id
+    };
+    newFighters.push(fighter);
+    return true;
+}
+
+function addPlayer(client){
+    client.data = {
+        id: client.id,
         pos: {
-            x: Math.random()*levelSize,
-            y: Math.random()*levelSize
+            x: Math.random()*game.level.length,
+            y: Math.random()*game.level[0].length
         },
         vel: {
             x: 0,
             y: 0
         }
     };
-    function addFighter(dist){
-        var d = Math.sqrt(dist);
-        var x = Math.floor(ws.data.pos.x+Math.random()*d*2-d);
-        var y = Math.floor(ws.data.pos.y+Math.random()*d*2-d);
-        if(x < 0) x = 0;
-        if(x >= level.length) x = level.length-1;
-        if(y < 0) y = 0;
-        if(y >= level[0].length) y = level[0].length-1;
-        if(level[x][y]) return false;
-        var fighter = {
-            x: x,
-            y: y,
-            id: ws.id
-        };
-        fighters.push(fighter);
-        level[x][y] = fighter;
-        return true;
-    }
-    var dist = 0;
-    for(var i = 0; i < startNumber; ++i){
-        while(!addFighter(dist)) ++dist;
-    }
-    ws.send(JSON.stringify({
-        fighters: fighters,
-        level: level,
-        levelSize: levelSize,
-        seed: rng.seed
+    client.send(JSON.stringify({
+        level: game.level,
+        fighters: game.fighters
     }));
-    ws.on('message', function(msg) {
+    client.on('message', function(msg) {
         var maxSpeed = 1;
         var d = JSON.parse(msg);
         var len = Math.sqrt(d.x*d.x+d.y*d.y);
@@ -118,8 +84,52 @@ wss.on('connection', function(ws) {
             d.x /= len;
             d.y /= len;
         }
-        ws.data.vel = d;
+        client.data.vel = d;
     });
+    client.on('close', function(){
+        oldFighters.push(client.id);
+        delete clients[client.id];
+    });
+    var startNumber = 100;
+    var dist = 0;
+    for(var i = 0; i < startNumber; ++i){
+        while(!addFighter(client, dist)) ++dist;
+    }
+}
+
+setInterval(function(){
+    wss.clients.forEach(function(client) {
+        client.data.pos.x += client.data.vel.x;
+        client.data.pos.y += client.data.vel.y;
+        if(client.data.pos.x < 0) client.data.pos.x = 0;
+        if(client.data.pos.x > game.level.length) client.data.pos.x = game.level.length;
+        if(client.data.pos.y < 0) client.data.pos.y = 0;
+        if(client.data.pos.y > game.level[0].length) client.data.pos.y = game.level[0].length;
+    });
+
+    var res = {};
+    wss.clients.forEach(function(client) {
+        res[client.id] = client.data;
+    });
+    var seed = Math.floor(Math.random()*2147483647);
+    wss.clients.forEach(function(client) {
+        client.send(JSON.stringify({
+            player: client.data,
+            players: res,
+            newFighters: newFighters,
+            oldFighters: oldFighters,
+            seed: seed
+        }));
+    });
+    game.update(res, null, newFighters, oldFighters, seed);
+    newFighters = [];
+    oldFighters = [];
+}, 1000/30);
+
+wss.on('connection', function(ws) {
+    ws.id = Math.floor(Math.random()*16777215).toString(16);
+    clients[ws.id] = ws;
+    addPlayer(ws);
 });
 
 var port = process.env.PORT || 5000;

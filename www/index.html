@@ -113,7 +113,7 @@
                         var r = 0;
                         var g = 0;
                         var b = 0;
-                        if(game.level[x][y] === true) pixels[i+j*viewRadius*2] = ((255 << 8 | r) << 8 | g) << 8 | b;
+                        if(game.level[x][y] === true) pixels[i+j*viewRadius*2] = ((255 << 8 | b) << 8 | g) << 8 | r;
                         else pixels[i+j*viewRadius*2] = 0;
                     }
                 }
@@ -124,7 +124,8 @@
                     if(x >= viewRadius*2) continue;
                     if(y < 0) continue;
                     if(y >= viewRadius*2) continue;
-                    pixels[x+y*viewRadius*2] = 255 << 24 | (0.5 + 0.8 * 255);
+                    var color = parseInt(game.fighters[i].id.substr(4, 2) + game.fighters[i].id.substr(2, 2) + game.fighters[i].id.substr(0, 2), 16);
+                    pixels[x+y*viewRadius*2] = 255 << 24 | color;
                 }
                 offctx.clearRect(0, 0, off.width, off.height);
                 offctx.putImageData(imagedata, 0, 0);
@@ -132,11 +133,14 @@
                 var radius = 1;
                 for(var i = 0; i < Object.keys(game.players).length; ++i){
                     var p = game.players[Object.keys(game.players)[i]];
-                    if(p.id == game.player.id) ctx.fillStyle = "green";
-                    else ctx.fillStyle = "black";
+                    ctx.fillStyle = "#" + p.id;
                     ctx.beginPath();
                     ctx.arc(p.pos.x, p.pos.y, radius, 0, 2*Math.PI);
                     ctx.fill();
+                    ctx.strokeStyle = "black";
+                    ctx.beginPath();
+                    ctx.arc(p.pos.x, p.pos.y, radius, 0, 2*Math.PI);
+                    ctx.stroke();
                 }
                 if(debug) drawDebug();
                 ctx.restore();
@@ -145,11 +149,13 @@
                 var data = JSON.parse(event.data);
                 if(data.fighters){
                     game = new shared.Game(data.level, data.fighters);
+                    ctx.imageSmoothingEnabled = false;
                     return;
                 }
-                game.update(data.players, data.player);
+                game.update(data.players, data.player, data.newFighters, data.oldFighters, data.seed);
                 draw();
             };
+            ctx.imageSmoothingEnabled = false;
         </script>
     </body>
 </html>
