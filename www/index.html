@@ -41,7 +41,7 @@
                     x: 0,
                     y: 0
                 };
-                document.body.onmousemove = function(event) {
+                document.body.onmousemove = document.body.ontouchmove = function(event) {
                     if(player == null) return;
                     var dx = event.clientX-canvas.width/2;
                     var dy = event.clientY-canvas.height/2;
