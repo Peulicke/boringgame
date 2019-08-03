@@ -24,7 +24,7 @@ var clients = {};
 var fighters = [];
 var level = new Array(levelSize);
 var metaballs = [];
-for(var i = 0; i < 70; ++i){
+for(var i = 0; i < 200; ++i){
     metaballs.push({
         x: Math.random()*levelSize,
         y: Math.random()*levelSize
