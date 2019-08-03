@@ -22,6 +22,7 @@
             var areas = [];
             var levelAreas = null;
             var maxDist = null;
+            var debug = false;
 
             var canvas = document.createElement("canvas");
             canvas.style.backgroundColor = "#f7f4f1";
@@ -56,6 +57,9 @@
                     event.clientX = event.touches[0].clientX;
                     event.clientY = event.touches[0].clientY;
                     document.body.onmousemove(event);
+                }
+                document.body.onkeydown = function(event){
+                    if(event.key === "F2") debug = !debug;
                 }
                 setInterval(function(){
                     ws.send(JSON.stringify(vel));
@@ -142,6 +146,18 @@
                 }
                 moveFighters();
             }
+            function drawDebug(){
+                ctx.lineWidth = 0.5;
+                ctx.strokeStyle = "blue";
+                for(var i = 0; i < areas.length; ++i){
+                    ctx.strokeRect(areas[i].x1+0.5, areas[i].y1+0.5, areas[i].x2-areas[i].x1, areas[i].y2-areas[i].y1);
+                }
+                for(var i = 0; i < areaTargets.length; ++i){
+                    for(var j = 0; j < areaTargets[i].length; ++j){
+                        ctx.fillRect(areaTargets[i][j].x, areaTargets[i][j].y, 1, 1);
+                    }
+                }
+            }
             function draw(data){
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.save()
@@ -209,18 +225,7 @@
                     ctx.arc(p.pos.x, p.pos.y, radius, 0, 2*Math.PI);
                     ctx.fill();
                 }
-                /*ctx.lineWidth = 0.3;
-                ctx.strokeStyle = "blue";
-                var p = {
-                    x: Math.min(Math.floor(p.pos.x), level.length-1),
-                    y: Math.min(Math.floor(p.pos.y), level[0].length-1)
-                }
-                //var i = levelAreas[p.x][p.y][0];
-                for(var i = 0; i < areas.length; ++i){
-                    ctx.strokeRect(areas[i].x1, areas[i].y1, areas[i].x2-areas[i].x1+1, areas[i].y2-areas[i].y1+1);
-                    if(areaTargets[i].length == 0) continue;
-                    ctx.fillRect(areaTargets[i][0].x, areaTargets[i][0].y, 2, 2);
-                }*/
+                if(debug) drawDebug();
                 ctx.restore();
             }
             ws.onmessage = function(event) {
