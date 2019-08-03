@@ -134,7 +134,7 @@
                         x: Math.min(Math.floor(p.pos.x), level.length-1),
                         y: Math.min(Math.floor(p.pos.y), level[0].length-1)
                     };
-                    areaTargets = shared.search(level, areas, levelAreas, pos, maxDist);
+                    areaTargets = shared.search(level, areas, levelAreas, pos, maxDist+1);
                 }
                 moveFighters();
             }
