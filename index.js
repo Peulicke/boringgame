@@ -220,6 +220,7 @@ setInterval(function(){
 
 wss.on('connection', function(ws) {
     ws.id = Math.floor(Math.random()*16777215).toString(16);
+    while(ws.id.length < 6) ws.id = "0" + ws.id;
     clients[ws.id] = ws;
     addPlayer(ws);
 });
