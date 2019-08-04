@@ -53,6 +53,37 @@
             }
             return holeCount;
         }
+        function validArea(x1, y1, x2, y2){
+            if(x1 < 0 || x2 >= level.length || y1 < 0 || y2 >= level[0].length) return false;
+            if(x2-x1 > 0 && holes(x1, y1, x2-x1, 0) == 0 && holes(x1, y1+1, x2-x1, 0) == 0) return false;
+            if(x2-x1 > 0 && holes(x1, y2, x2-x1, 0) == 0 && holes(x1, y2-1, x2-x1, 0) == 0) return false;
+            if(y2-y1 > 0 && holes(x1, y1, 0, y2-y1) == 0 && holes(x1+1, y1, 0, y2-y1) == 0) return false;
+            if(y2-y1 > 0 && holes(x2, y1, 0, y2-y1) == 0 && holes(x2-1, y1, 0, y2-y1) == 0) return false;
+            for(var change = true; change;){
+                change = false;
+                if(holes(x1, y1, x2-x1, 0) > 1) return false;
+                if(holes(x1, y2, x2-x1, 0) > 1) return false;
+                if(holes(x1, y1, 0, y2-y1) > 1) return false;
+                if(holes(x2, y1, 0, y2-y1) > 1) return false;
+                if(x2-x1 > 0 && increaseOnly(x2-1, y1, x2, y1, 0, y2-y1)){
+                    --x2;
+                    change = true;
+                }
+                if(x2-x1 > 0 && increaseOnly(x1+1, y1, x1, y1, 0, y2-y1)){
+                    ++x1;
+                    change = true;
+                }
+                if(y2-y1 > 0 && increaseOnly(x1, y2-1, x1, y2, x2-x1, 0)){
+                    --y2;
+                    change = true;
+                }
+                if(y2-y1 > 0 && increaseOnly(x1, y1+1, x1, y1, x2-x1, 0)){
+                    ++y1;
+                    change = true;
+                }
+            }
+            return x1 == x2 && y1 == y2;
+        }
         for(var i = 0; i < level.length; ++i){
             for(var j = 0; j < level[i].length; ++j){
                 if(level[i][j] === true) continue;
@@ -63,19 +94,19 @@
                 var y2 = j;
                 for(var change = true; change;){
                     change = false;
-                    if(x2+1 < level.length && increaseOnly(x2, y1, x2+1, y1, 0, y2-y1) && holes(x2, y1, 0, y2-y1) == 1 && holes(x2+1, y1, 0, y2-y1) <= 1){
+                    if(validArea(x1, y1, x2+1, y2)){
                         ++x2;
                         change = true;
                     }
-                    if(y2+1 < level[0].length && increaseOnly(x1, y2, x1, y2+1, x2-x1, 0) && holes(x1, y2, x2-x1, 0) == 1 && holes(x1, y2+1, x2-x1, 0) <= 1){
+                    if(validArea(x1, y1, x2, y2+1)){
                         ++y2;
                         change = true;
                     }
-                    if(x1-1 >= 0 && increaseOnly(x1, y1, x1-1, y1, 0, y2-y1) && holes(x1, y1, 0, y2-y1) == 1 && holes(x1-1, y1, 0, y2-y1) <= 1){
+                    if(validArea(x1-1, y1, x2, y2)){
                         --x1;
                         change = true;
                     }
-                    if(y1-1 >= 0 && increaseOnly(x1, y1, x1, y1-1, x2-x1, 0) && holes(x1, y1, x2-x1, 0) == 1 && holes(x1, y1-1, x2-x1, 0) <= 1){
+                    if(validArea(x1, y1-1, x2, y2)){
                         --y1;
                         change = true;
                     }
@@ -314,7 +345,6 @@
         this.maxDist = 0;
         for(var i = 0; i < this.fighters.length; ++i){
             var dist, dir;
-            if(!areaTargets[this.fighters[i].id]) console.log(this.fighters[i].id);
             [dist, dir] = this.dist(this.level, this.areas, this.levelAreas, areaTargets[this.fighters[i].id], this.fighters[i]);
             this.maxDist = Math.max(this.maxDist, dist);
             if(!dir){
