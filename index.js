@@ -11,6 +11,8 @@ var wss = new WebSocket.Server({server});
 
 var clients = {};
 
+var maxSpeed = 1;
+
 function validLevel(level){
     var checked = new Array(level.length);
     var start = null;
@@ -147,19 +149,23 @@ function addPlayer(client){
         level: game.level,
         fighters: game.fighters
     }));
-    client.data = {
-        id: client.id,
-        pos: {
+    var pos;
+    while(true){
+        pos = {
             x: Math.random()*game.level.length,
             y: Math.random()*game.level[0].length
-        },
+        };
+        if(level[Math.floor(pos.x)][Math.floor(pos.y)] === false) break;
+    }
+    client.data = {
+        id: client.id,
+        pos: pos,
         vel: {
             x: 0,
             y: 0
         }
     };
     client.on('message', function(msg) {
-        var maxSpeed = 1;
         var d = JSON.parse(msg);
         var len = Math.sqrt(d.x*d.x+d.y*d.y);
         len /= maxSpeed;
@@ -184,14 +190,59 @@ function addPlayer(client){
     game = oldGame;
 }
 
+function collision(pos){
+    var x = Math.floor(pos.x);
+    var y = Math.floor(pos.y);
+    if(level[x][y] !== true) return;
+    var dx = pos.x-x;
+    var dy = pos.y-y;
+    if(Math.abs(dx-0.5) > Math.abs(dy-0.5)){
+        if(dx > 0.5){
+            if(x >= level.length-1 || level[x+1][y] === true){
+                pos.y = y;
+                if(dy > 0.5) ++pos.y;
+            }
+            else pos.x = x+1;
+        }
+        else{
+            if(x <= 0 || level[x-1][y] === true){
+                pos.y = y;
+                if(dy > 0.5) ++pos.y;
+            }
+            else pos.x = x;
+        }
+        return;
+    }
+    if(dy > 0.5){
+        if(y >= level[0].length-1 || level[x][y+1] === true){
+            pos.x = x;
+            if(dx > 0.5) ++pos.x;
+        }
+        else pos.y = y+1;
+    }
+    else{
+        if(y <= 0 || level[x][y-1] === true){
+            pos.x = x;
+            if(dx > 0.5) ++pos.x;
+        }
+        else pos.y = y;
+    }
+}
+
 setInterval(function(){
     wss.clients.forEach(function(client) {
-        client.data.pos.x += client.data.vel.x;
-        client.data.pos.y += client.data.vel.y;
-        if(client.data.pos.x < 0) client.data.pos.x = 0;
-        if(client.data.pos.x > game.level.length) client.data.pos.x = game.level.length;
-        if(client.data.pos.y < 0) client.data.pos.y = 0;
-        if(client.data.pos.y > game.level[0].length) client.data.pos.y = game.level[0].length;
+        var num = 3*maxSpeed;
+        for(var i = 0; i < num; ++i){
+            client.data.pos.x += client.data.vel.x/num;
+            client.data.pos.y += client.data.vel.y/num;
+            if(client.data.pos.x < 0) client.data.pos.x = 0;
+            if(client.data.pos.x > game.level.length-0.01) client.data.pos.x = game.level.length-0.01;
+            if(client.data.pos.y < 0) client.data.pos.y = 0;
+            if(client.data.pos.y > game.level[0].length-0.01) client.data.pos.y = game.level[0].length-0.01;
+            collision(client.data.pos);
+            collision(client.data.pos);
+            collision(client.data.pos);
+        }
     });
 
     var res = {};
@@ -199,8 +250,8 @@ setInterval(function(){
         res[client.id] = Object.assign({}, client.data);
         res[client.id].posSmooth = Object.assign({}, client.data.pos);
         res[client.id].pos = Object.assign({}, client.data.pos);
-        res[client.id].pos.x = Math.min(Math.floor(res[client.id].pos.x), game.level.length-1);
-        res[client.id].pos.y = Math.min(Math.floor(res[client.id].pos.y), game.level[0].length-1);
+        res[client.id].pos.x = Math.floor(res[client.id].pos.x);
+        res[client.id].pos.y = Math.floor(res[client.id].pos.y);
     });
     var seed = Math.floor(Math.random()*2147483647);
     wss.clients.forEach(function(client) {
