@@ -16,7 +16,7 @@ var levelSize = 200;
 var level = new Array(levelSize);
 
 var metaballs = [];
-for(var i = 0; i < 50; ++i){
+for(var i = 0; i < 5; ++i){
     metaballs.push({
         x: Math.random()*levelSize,
         y: Math.random()*levelSize
@@ -53,9 +53,10 @@ function addFighter(client, dist){
     var fighter = {
         x: x,
         y: y,
-        id: client.id
+        id: client.id,
+        health: 255
     };
-    game.level[fighter.x][fighter.y] = fighter.id;
+    game.level[fighter.x][fighter.y] = fighter;
     game.fighters.push(fighter);
     newFighters.push(fighter);
     return true;

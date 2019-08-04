@@ -125,8 +125,13 @@
                     if(x >= viewRadius*2) continue;
                     if(y < 0) continue;
                     if(y >= viewRadius*2) continue;
-                    var color = parseInt(game.fighters[i].id.substr(4, 2) + game.fighters[i].id.substr(2, 2) + game.fighters[i].id.substr(0, 2), 16);
-                    pixels[x+y*viewRadius*2] = 255 << 24 | color;
+                    var r = parseInt(game.fighters[i].id.substr(0, 2), 16);
+                    var g = parseInt(game.fighters[i].id.substr(2, 2), 16);
+                    var b = parseInt(game.fighters[i].id.substr(4, 2), 16);
+                    r = Math.round(r*game.fighters[i].health/255);
+                    g = Math.round(g*game.fighters[i].health/255);
+                    b = Math.round(b*game.fighters[i].health/255);
+                    pixels[x+y*viewRadius*2] = ((255 << 8 | b) << 8 | g) << 8 | r;
                 }
                 offctx.clearRect(0, 0, off.width, off.height);
                 offctx.putImageData(imagedata, 0, 0);

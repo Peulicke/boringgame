@@ -290,7 +290,19 @@
             if(y < 0) return false;
             if(x >= this.level.length) return false;
             if(y >= this.level[0].length) return false;
-            if(this.level[x][y] !== false) return false;
+            if(this.level[x][y] === true) return false;
+            if(this.level[x][y] !== false){
+                if(this.level[x][y].id == fighter.id){
+                    this.level[x][y].health += 5;
+                    return false;
+                }
+                this.level[x][y].health -= 10;
+                if(this.level[x][y].health <= 0){
+                    this.level[x][y].health = 0;
+                    this.level[x][y].id = fighter.id;
+                }
+                return true;
+            }
             this.level[x][y] = fighter;
             this.level[fighter.x][fighter.y] = false;
             fighter.x = x;
@@ -345,6 +357,9 @@
                 }
             }
         }
+        for(var i = 0; i < this.fighters.length; ++i){
+            this.fighters[i].health = Math.min(this.fighters[i].health+1, 255);
+        }
     };
     exports.Game.prototype.removeFighters = function(id){
         for(var i = this.fighters.length-1; i >= 0; --i){
@@ -355,7 +370,7 @@
     };
     exports.Game.prototype.updateFighters = function(newFighters, oldFighters){
         for(var i = 0; i < newFighters.length; ++i){
-            this.level[newFighters[i].x][newFighters[i].y] = newFighters[i].id;
+            this.level[newFighters[i].x][newFighters[i].y] = newFighters[i];
             this.fighters.push(newFighters[i]);
         }
         for(var i = 0; i < oldFighters.length; ++i){
