@@ -20,6 +20,7 @@
         for(var i = 0; i < this.fighters.length; ++i){
             this.level[this.fighters[i].x][this.fighters[i].y] = this.fighters[i];
         }
+        this.areaTargets = null;
     };
     exports.Game.prototype.computeAreas = function(level){
         var areas = [];
@@ -381,12 +382,12 @@
         this.players = players;
         this.player = player;
         this.rng = new exports.Random(seed);
-        var areaTargets = {};
+        this.areaTargets = {};
         for(var i = 0; i < Object.keys(this.players).length; ++i){
             var id = Object.keys(this.players)[i];
             var p = this.players[id];
-            areaTargets[id] = this.search(this.level, this.areas, this.levelAreas, p.pos, this.maxDist+1);
+            this.areaTargets[id] = this.search(this.level, this.areas, this.levelAreas, p.pos, this.maxDist+1);
         }
-        this.moveFighters(areaTargets);
+        this.moveFighters(this.areaTargets);
     };
 }(typeof exports === 'undefined' ? this.shared = {} : exports));

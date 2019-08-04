@@ -66,9 +66,9 @@
                 for(var i = 0; i < game.areas.length; ++i){
                     ctx.strokeRect(game.areas[i].x1+0.5, game.areas[i].y1+0.5, game.areas[i].x2-game.areas[i].x1, game.areas[i].y2-game.areas[i].y1);
                 }
-                for(var i = 0; i < game.areaTargets.length; ++i){
-                    for(var j = 0; j < game.areaTargets[i].length; ++j){
-                        ctx.fillRect(game.areaTargets[i][j].x, game.areaTargets[i][j].y, 1, 1);
+                for(var i = 0; i < game.areaTargets[game.player.id].length; ++i){
+                    for(var j = 0; j < game.areaTargets[game.player.id][i].length; ++j){
+                        ctx.fillRect(game.areaTargets[game.player.id][i][j].x, game.areaTargets[game.player.id][i][j].y, 1, 1);
                     }
                 }
             }

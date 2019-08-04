@@ -11,28 +11,108 @@ var wss = new WebSocket.Server({server});
 
 var clients = {};
 
-var levelSize = 200;
+function validLevel(level){
+    var checked = new Array(level.length);
+    var start = null;
+    for(var i = 0; i < checked.length; ++i){
+        checked[i] = new Array(level[i].length);
+        for(var j = 0; j < checked[i].length; ++j){
+            checked[i][j] = false;
+            if(level[i][j] <= 1) start = {x: i, y: j};
+        }
+    }
+    if(start === null) return false;
+    var space;
+    space = 0;
+    for(var i = 0; i < level.length; ++i){
+        if(level[i][0] <= 1) space = true;
+    }
+    if(!space) return false;
+    space = 0;
+    for(var i = 0; i < level.length; ++i){
+        if(level[i][level[0].length-1] <= 1) space = true;
+    }
+    if(!space) return false;
+    space = 0;
+    for(var i = 0; i < level[0].length; ++i){
+        if(level[0][i] <= 1) space = true;
+    }
+    if(!space) return false;
+    space = 0;
+    for(var i = 0; i < level[0].length; ++i){
+        if(level[level.length-1][i] <= 1) space = true;
+    }
+    if(!space) return false;
+    var check = [start];
+    while(check.length > 0){
+        var p = check.shift();
+        if(p.x < 0 || p.x >= level.length || p.y < 0 || p.y >= level[0].length) continue;
+        if(level[p.x][p.y] > 1) continue;
+        if(checked[p.x][p.y]) continue;
+        checked[p.x][p.y] = true;
+        check.push({x: p.x-1, y: p.y});
+        check.push({x: p.x+1, y: p.y});
+        check.push({x: p.x, y: p.y-1});
+        check.push({x: p.x, y: p.y+1});
+    }
+    for(var i = 0; i < checked.length; ++i){
+        for(var j = 0; j < checked[i].length; ++j){
+            if(level[i][j] <= 1 && !checked[i][j]) return false;
+        }
+    }
+    return true;
+}
+
+var levelSize = 500;
 
 var level = new Array(levelSize);
-
-var metaballs = [];
-for(var i = 0; i < 5; ++i){
-    metaballs.push({
-        x: Math.random()*levelSize,
-        y: Math.random()*levelSize
-    });
-}
 for(var i = 0; i < levelSize; ++i){
     level[i] = new Array(levelSize);
     for(var j = 0; j < levelSize; ++j){
-        level[i][j] = false;
-        var sum = 0;
-        for(var k = 0; k < metaballs.length; ++k){
-            var dx = metaballs[k].x-i;
-            var dy = metaballs[k].y-j;
-            sum += 1/(1+dx*dx+dy*dy);
+        level[i][j] = 0;
+    }
+}
+
+var metaballs = [];
+var size = 100000;
+var minSize = 1000;
+var count = 0;
+
+function addMetaball(x, y, w){
+    var r = 100;
+    for(var i = Math.max(x-r, 0); i < Math.min(x+r, levelSize); ++i){
+        for(var j = Math.max(y-r, 0); j < Math.min(y+r, levelSize); ++j){
+            var dx = x-i;
+            var dy = y-j;
+            level[i][j] += w/(10+Math.pow(dx*dx+dy*dy, 2));
         }
-        if(sum > 0.02) level[i][j] = true;
+    }
+}
+
+while(size >= minSize){
+    var metaballs = [];
+    var num = 30;
+    for(var i = 0; i < num; ++i){
+        metaballs.push({
+            x: Math.floor(Math.random()*levelSize),
+            y: Math.floor(Math.random()*levelSize),
+        });
+    }
+    for(var i = 0; i < num; ++i){
+        addMetaball(metaballs[i].x, metaballs[i].y, size);
+    }
+    if(!validLevel(level)){
+        for(var i = 0; i < num; ++i){
+            addMetaball(metaballs[i].x, metaballs[i].y, -size);
+        }
+        size *= 0.9;
+    } else ++count;
+    console.log(size + '\t' + count);
+}
+
+for(var i = 0; i < levelSize; ++i){
+    for(var j = 0; j < levelSize; ++j){
+        level[i][j] = (level[i][j] > 1);
     }
 }
 
