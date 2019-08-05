@@ -125,12 +125,9 @@
                     if(x >= viewRadius*2) continue;
                     if(y < 0) continue;
                     if(y >= viewRadius*2) continue;
-                    var r = parseInt(game.fighters[i].id.substr(0, 2), 16);
-                    var g = parseInt(game.fighters[i].id.substr(2, 2), 16);
-                    var b = parseInt(game.fighters[i].id.substr(4, 2), 16);
-                    r = Math.round(r*game.fighters[i].health/255);
-                    g = Math.round(g*game.fighters[i].health/255);
-                    b = Math.round(b*game.fighters[i].health/255);
+                    var r = Math.round(game.fighters[i].health*game.players[game.fighters[i].id].color.r);
+                    var g = Math.round(game.fighters[i].health*game.players[game.fighters[i].id].color.g);
+                    var b = Math.round(game.fighters[i].health*game.players[game.fighters[i].id].color.b);
                     pixels[x+y*viewRadius*2] = ((255 << 8 | b) << 8 | g) << 8 | r;
                 }
                 offctx.clearRect(0, 0, off.width, off.height);
@@ -160,6 +157,14 @@
                 }
                 game.updateFighters(data.newFighters, data.oldFighters);
                 game.update(data.players, data.players[data.player], data.seed);
+                for(var i = 0; i < Object.keys(game.players).length; ++i){
+                    var p = game.players[Object.keys(game.players)[i]];
+                    p.color = {
+                        r:  parseInt(p.id.substr(0, 2), 16)/255,
+                        g: parseInt(p.id.substr(2, 2), 16)/255,
+                        b: parseInt(p.id.substr(4, 2), 16)/255
+                    };
+                }
                 draw();
             };
             ctx.imageSmoothingEnabled = false;
