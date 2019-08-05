@@ -165,6 +165,19 @@
         return [areas, levelAreas];
     };
     exports.Game.prototype.dist = function(level, areas, levelAreas, areaTargets, pos){
+        if(levelAreas[pos.x][pos.y].length == 1){
+            var targets = areaTargets[levelAreas[pos.x][pos.y][0]];
+            if(targets.length == 1){
+                var target = targets[0];
+                var dx = target.x-pos.x;
+                var dy = target.y-pos.y;
+                var dis = target.d+Math.abs(dx)+Math.abs(dy);
+                return [dis, {
+                    x: Math.sign(dx),
+                    y: Math.sign(dy)
+                }];
+            }
+        }
         var dist = null;
         var possibilities = [];
         for(var i = 0; i < levelAreas[pos.x][pos.y].length; ++i){
@@ -315,37 +328,61 @@
         }
         return areaTargets;
     };
-    exports.Game.prototype.moveFighters = function(areaTargets){
-        function move(fighter, dx, dy){
-            var x = fighter.x+dx;
-            var y = fighter.y+dy;
-            if(x < 0) return false;
-            if(y < 0) return false;
-            if(x >= this.level.length) return false;
-            if(y >= this.level[0].length) return false;
-            if(this.level[x][y] === true) return false;
-            if(this.level[x][y] !== false){
-                if(this.level[x][y].id == fighter.id){
-                    this.level[x][y].health += 5;
-                    return false;
+    exports.Game.prototype.move = function(fighter, dx, dy){
+        var x = fighter.x+dx;
+        var y = fighter.y+dy;
+        if(x < 0) return false;
+        if(y < 0) return false;
+        if(x >= this.level.length) return false;
+        if(y >= this.level[0].length) return false;
+        if(this.level[x][y] === true) return false;
+        if(this.level[x][y] !== false){
+            if(this.level[x][y].id == fighter.id){
+                if(this.level[x][y].health == 255) return false;
+                var h = Math.min(Math.floor(fighter.health*0.02), 255-this.level[x][y].health);
+                this.level[x][y].health += h;
+                fighter.health -= h;
+                var f = this.level[x][y];
+                for(var i = Math.max(f.x-1, 0); i <= Math.min(f.x+1, this.level.length-1); ++i){
+                    for(var j = Math.max(f.y-1, 0); j <= Math.min(f.y+1, this.level[0].length-1); ++j){
+                        if(this.level[i][j].id) this.level[i][j].frozen = false;
+                    }
                 }
-                this.level[x][y].health -= 10;
-                if(this.level[x][y].health <= 0){
-                    this.level[x][y].health = 0;
-                    this.level[x][y].id = fighter.id;
-                }
-                return true;
+                return false;
             }
-            this.level[x][y] = fighter;
-            this.level[fighter.x][fighter.y] = false;
-            fighter.x = x;
-            fighter.y = y;
+            this.level[x][y].health -= 10;
+            if(this.level[x][y].health <= 0){
+                this.level[x][y].health = 0;
+                this.level[x][y].id = fighter.id;
+                var f = this.level[x][y];
+                for(var i = Math.max(f.x-1, 0); i <= Math.min(f.x+1, this.level.length-1); ++i){
+                    for(var j = Math.max(f.y-1, 0); j <= Math.min(f.y+1, this.level[0].length-1); ++j){
+                        if(this.level[i][j].id) this.level[i][j].frozen = false;
+                    }
+                }
+            }
             return true;
         }
+        this.level[x][y] = fighter;
+        this.level[fighter.x][fighter.y] = false;
+        if(fighter.unfreeze){
+            fighter.unfreeze = false;
+            for(var i = Math.max(fighter.x-1, 0); i <= Math.min(fighter.x+1, this.level.length-1); ++i){
+                for(var j = Math.max(fighter.y-1, 0); j <= Math.min(fighter.y+1, this.level[0].length-1); ++j){
+                    if(this.level[i][j].id) this.level[i][j].frozen = false;
+                }
+            }
+        }
+        fighter.x = x;
+        fighter.y = y;
+        return true;
+    }
+    exports.Game.prototype.moveFighters = function(areaTargets){
         for(var i = 0; i < Object.keys(this.maxDist).length; ++i){
             this.maxDist[Object.keys(this.maxDist)[i]] = 0;
         }
         for(var i = 0; i < this.fighters.length; ++i){
+            if(this.fighters[i].frozen) continue;
             var id = this.fighters[i].id;
             var dist, dir;
             [dist, dir] = this.dist(this.level, this.areas, this.levelAreas, areaTargets[id], this.fighters[i]);
@@ -354,37 +391,62 @@
             var m = Math.abs(dir.x)+Math.abs(dir.y);
             if(m == 0) continue;
             if(m == 1){
-                if(move.call(this, this.fighters[i], dir.x, dir.y)) continue;
+                if(this.move(this.fighters[i], dir.x, dir.y)) continue;
                 var rand = (this.rng.nextFloat() < 0.5);
                 if(rand){
-                    if(move.call(this, this.fighters[i], dir.x-dir.y, dir.x+dir.y)) continue;
+                    if(this.move(this.fighters[i], dir.x-dir.y, dir.x+dir.y)) continue;
+                    if(this.move(this.fighters[i], dir.x+dir.y, dir.y-dir.x)) continue;
                 }
                 else{
-                    if(move.call(this, this.fighters[i], dir.x+dir.y, dir.y-dir.x)) continue;
+                    if(this.move(this.fighters[i], dir.x+dir.y, dir.y-dir.x)) continue;
+                    if(this.move(this.fighters[i], dir.x-dir.y, dir.x+dir.y)) continue;
                 }
                 rand = (this.rng.nextFloat() < 0.5);
                 if(rand){
-                    if(move.call(this, this.fighters[i], -dir.y, dir.x)) continue;
+                    if(this.move(this.fighters[i], -dir.y, dir.x)) continue;
+                    if(this.move(this.fighters[i], dir.y, -dir.x)) continue;
                 }
                 else{
-                    if(move.call(this, this.fighters[i], dir.y, -dir.x)) continue;
+                    if(this.move(this.fighters[i], dir.y, -dir.x)) continue;
+                    if(this.move(this.fighters[i], -dir.y, dir.x)) continue;
                 }
             }
             if(m == 2){
-                if(move.call(this, this.fighters[i], dir.x, dir.y)) continue;
+                if(this.move(this.fighters[i], dir.x, dir.y)) continue;
                 var rand = (this.rng.nextFloat() < 0.5);
                 if(rand){
-                    if(move.call(this, this.fighters[i], dir.x, 0)) continue;
+                    if(this.move(this.fighters[i], dir.x, 0)) continue;
+                    if(this.move(this.fighters[i], 0, dir.y)) continue;
                 }
                 else{
-                    if(move.call(this, this.fighters[i], 0, dir.y)) continue;
+                    if(this.move(this.fighters[i], 0, dir.y)) continue;
+                    if(this.move(this.fighters[i], dir.x, 0)) continue;
                 }
                 rand = (this.rng.nextFloat() < 0.5);
                 if(rand){
-                    if(move.call(this, this.fighters[i], -dir.y, dir.x)) continue;
+                    if(this.move(this.fighters[i], -dir.y, dir.x)) continue;
+                    if(this.move(this.fighters[i], dir.y, -dir.x)) continue;
                 }
                 else{
-                    if(move.call(this, this.fighters[i], dir.y, -dir.x)) continue;
+                    if(this.move(this.fighters[i], dir.y, -dir.x)) continue;
+                    if(this.move(this.fighters[i], -dir.y, dir.x)) continue;
+                }
+            }
+            var freeze = true;
+            loop:
+            for(var j = Math.max(this.fighters[i].x-1, 0); j <= Math.min(this.fighters[i].x+1, this.level.length-1); ++j){
+                for(var k = Math.max(this.fighters[i].y-1, 0); k <= Math.min(this.fighters[i].y+1, this.level[0].length-1); ++k){
+                    if(this.level[j][k] === false || this.level[j][k].id != this.fighters[i].id || this.level[j][k].health < 255){
+                        freeze = false;
+                        break loop;
+                    }
+                }
+            }
+            if(!freeze) continue;
+            this.fighters[i].frozen = true;
+            for(var j = Math.max(this.fighters[i].x-1, 0); j <= Math.min(this.fighters[i].x+1, this.level.length-1); ++j){
+                for(var k = Math.max(this.fighters[i].y-1, 0); k <= Math.min(this.fighters[i].y+1, this.level[0].length-1); ++k){
+                    if(this.level[j][k].id) this.level[j][k].unfreeze = true;
                 }
             }
         }
@@ -394,9 +456,15 @@
     };
     exports.Game.prototype.removeFighters = function(id){
         for(var i = this.fighters.length-1; i >= 0; --i){
-            if(this.fighters[i].id !== id) continue;
-            this.level[this.fighters[i].x][this.fighters[i].y] = false;
+            var fighter = this.fighters[i];
+            if(fighter.id !== id) continue;
+            this.level[fighter.x][fighter.y] = false;
             this.fighters.splice(i, 1);
+            for(var j = Math.max(fighter.x-1, 0); j <= Math.min(fighter.x+1, this.level.length-1); ++j){
+                for(var k = Math.max(fighter.y-1, 0); k <= Math.min(fighter.y+1, this.level[0].length-1); ++k){
+                    if(this.level[j][k].id) this.level[j][k].frozen = false;
+                }
+            }
         }
     };
     exports.Game.prototype.updateFighters = function(newFighters, oldFighters){

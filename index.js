@@ -136,7 +136,9 @@ function addFighter(client, dist){
         x: x,
         y: y,
         id: client.id,
-        health: 255
+        health: 255,
+        frozen: false,
+        unfreeze: false
     };
     game.level[fighter.x][fighter.y] = fighter;
     game.fighters.push(fighter);
@@ -184,7 +186,7 @@ function addPlayer(client){
     });
     var oldGame = game;
     game = new shared.Game(JSON.parse(JSON.stringify(game.level)), JSON.parse(JSON.stringify(game.fighters)), JSON.parse(JSON.stringify(game.areas)), JSON.parse(JSON.stringify(game.levelAreas)));
-    var startNumber = 100;
+    var startNumber = 200;
     var dist = 0;
     for(var i = 0; i < startNumber; ++i){
         while(!addFighter(client, dist)) ++dist;
