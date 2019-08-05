@@ -65,7 +65,7 @@ function validLevel(level){
     return true;
 }
 
-var levelSize = 500;
+var levelSize = 1000;
 
 var level = new Array(levelSize);
 for(var i = 0; i < levelSize; ++i){
@@ -76,8 +76,8 @@ for(var i = 0; i < levelSize; ++i){
 }
 
 var metaballs = [];
-var size = 100000;
-var minSize = 1000;
+var size = 1000000;
+var minSize = 10000;
 var count = 0;
 
 function addMetaball(x, y, w){
@@ -147,7 +147,9 @@ function addFighter(client, dist){
 function addPlayer(client){
     client.send(JSON.stringify({
         level: game.level,
-        fighters: game.fighters
+        fighters: game.fighters,
+        areas: game.areas,
+        levelAreas: game.levelAreas
     }));
     var pos;
     while(true){
@@ -181,7 +183,7 @@ function addPlayer(client){
         delete clients[client.id];
     });
     var oldGame = game;
-    game = new shared.Game(JSON.parse(JSON.stringify(game.level)), JSON.parse(JSON.stringify(game.fighters)));
+    game = new shared.Game(JSON.parse(JSON.stringify(game.level)), JSON.parse(JSON.stringify(game.fighters)), JSON.parse(JSON.stringify(game.areas)), JSON.parse(JSON.stringify(game.levelAreas)));
     var startNumber = 100;
     var dist = 0;
     for(var i = 0; i < startNumber; ++i){

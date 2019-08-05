@@ -154,7 +154,7 @@
             ws.onmessage = function(event) {
                 var data = JSON.parse(event.data);
                 if(data.fighters){
-                    game = new shared.Game(data.level, data.fighters);
+                    game = new shared.Game(data.level, data.fighters, data.areas, data.levelAreas);
                     ctx.imageSmoothingEnabled = false;
                     return;
                 }

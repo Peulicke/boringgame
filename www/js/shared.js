@@ -9,14 +9,16 @@
     exports.Random.prototype.nextFloat = function(){
         return this.next()/2147483647;
     };
-    exports.Game = function(level, fighters){
+    exports.Game = function(level, fighters, areas, levelAreas){
         this.level = level;
         this.fighters = fighters;
         this.players = null;
         this.player = null;
-        this.maxDist = null;
+        this.maxDist = {};
         this.rng = null;
-        [this.areas, this.levelAreas] = this.computeAreas(this.level);
+        this.areas = areas;
+        this.levelAreas = levelAreas;
+        if(!this.areas || !this.levelAreas) [this.areas, this.levelAreas] = this.computeAreas(this.level);
         for(var i = 0; i < this.fighters.length; ++i){
             this.level[this.fighters[i].x][this.fighters[i].y] = this.fighters[i];
         }
@@ -34,6 +36,7 @@
         function increaseOnly(x1, y1, x2, y2, sx, sy){
             for(var i = 0; i <= sx; ++i){
                 for(var j = 0; j <= sy; ++j){
+                    if(levelAreas[x1+i][y1+j][0] !== null && levelAreas[x1+i][y1+j][1] !== null && levelAreas[x1+i][y1+j][2] !== null && levelAreas[x1+i][y1+j][3] !== null) return false;
                     if(levelAreas[x2+i][y2+j][0] !== null && levelAreas[x2+i][y2+j][1] !== null && levelAreas[x2+i][y2+j][2] !== null && levelAreas[x2+i][y2+j][3] !== null) return false;
                     if(level[x1+i][y1+j] === true && level[x2+i][y2+j] !== true) return false;
                 }
@@ -231,11 +234,9 @@
             }
             this.splice(i, 0, e);
         };
-        var count = 0;
         while(check.length > 0){
-            ++count;
             var p = check.shift();
-            //if(p.d > maxDist) break;
+            if(p.d > maxDist) break;
             for(var i = 0; i < levelAreas[p.x][p.y].length; ++i){
                 var targets = areaTargets[levelAreas[p.x][p.y][i]];
                 if(!targets) continue;
@@ -341,16 +342,15 @@
             fighter.y = y;
             return true;
         }
-        var maxDistPrev = this.maxDist;
-        this.maxDist = 0;
+        for(var i = 0; i < Object.keys(this.maxDist).length; ++i){
+            this.maxDist[Object.keys(this.maxDist)[i]] = 0;
+        }
         for(var i = 0; i < this.fighters.length; ++i){
+            var id = this.fighters[i].id;
             var dist, dir;
-            [dist, dir] = this.dist(this.level, this.areas, this.levelAreas, areaTargets[this.fighters[i].id], this.fighters[i]);
-            this.maxDist = Math.max(this.maxDist, dist);
-            if(!dir){
-                this.maxDist = maxDistPrev+1;
-                continue;
-            }
+            [dist, dir] = this.dist(this.level, this.areas, this.levelAreas, areaTargets[id], this.fighters[i]);
+            this.maxDist[id] = Math.max(this.maxDist[id], dist);
+            if(!dir) continue;
             var m = Math.abs(dir.x)+Math.abs(dir.y);
             if(m == 0) continue;
             if(m == 1){
@@ -413,10 +413,14 @@
         this.player = player;
         this.rng = new exports.Random(seed);
         this.areaTargets = {};
+        var maxDistOld = this.maxDist;
+        this.maxDist = {};
         for(var i = 0; i < Object.keys(this.players).length; ++i){
             var id = Object.keys(this.players)[i];
             var p = this.players[id];
-            this.areaTargets[id] = this.search(this.level, this.areas, this.levelAreas, p.pos, this.maxDist+1);
+            this.maxDist[id] = maxDistOld[id];
+            this.rng.seed = seed;
+            this.areaTargets[id] = this.search(this.level, this.areas, this.levelAreas, p.pos, this.maxDist[id]+2);
         }
         this.moveFighters(this.areaTargets);
     };
